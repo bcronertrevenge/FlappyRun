@@ -5,13 +5,15 @@
 class Player
 {
 public:
-	Player();
+	Player(float width);
 	~Player();
 
 	void DropBomb();
 	void KillPlayer();
 
 	glm::vec3 GetPosition();
+	void MoveLeft();
+	void MoveRight();
 
 private:
 	glm::vec3 Position;
@@ -19,5 +21,6 @@ private:
 	bool hasBomb;
 	float speed;
 	bool isDead;
+	float width;
 };
 
