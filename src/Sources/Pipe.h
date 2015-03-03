@@ -4,7 +4,7 @@
 class Pipe
 {
 public:
-	Pipe(glm::vec3 pos, float withmap);
+	Pipe(glm::vec3 pos, float startZ, float endZ);
 	~Pipe();
 	void Move(float speed);
 	glm::vec3 GetPosition();
@@ -13,7 +13,8 @@ public:
 private:
 	glm::vec3 Position;
 	glm::vec3 size;
-	float widthmap;
+	float startZ;
+	float endZ;
 
 };
 

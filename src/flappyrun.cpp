@@ -6,6 +6,7 @@
 #include <string.h>
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include <cmath>
 
@@ -228,19 +229,15 @@ int main( int argc, char **argv )
     int plane_triangleCount = 2;
     int plane_triangleList[] = {
 			0, 1, 2, 2, 1, 3,
-			0, 1, 2, 2, 1, 3 
 	};
     float plane_uvs[] = {
 			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f,
-			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f 
 	};
     float plane_vertices[] = {
-			-50.0, -1.0, 50.0, 50.0, -1.0, 50.0, -50.0, -1.0, -50.0, 50.0, -1.0, -50.0,
-			-50.0, 2.0, 50.0, 50.0, 2.0, 50.0, -50.0, 2.0, -50.0, 50.0, 2.0, -50.0 
+			-50.0, -1.0, 20.0, 50.0, -1.0, 20.0, -50.0, -1.0, -80.0, 50.0, -1.0, -80.0
 	};
     float plane_normals[] = {
 			0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-			0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0 
 	};
 
     // Vertex Array Object
@@ -299,7 +296,13 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Player player(10.f);
-	Pipe * pipe = new Pipe(glm::vec3(0, 0, -40.f), 100.f);
+	std::vector<Pipe*> pipes;
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, 0.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -20.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -40.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -100.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), -80.f, 20.f));
     // Viewport 
     glViewport( 0, 0, width, height  );
 
@@ -416,11 +419,14 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int) instanceCount);
 
-		if (pipe != NULL)
+		for (Pipe * pipe : pipes)
 		{
-			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
-			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
-		}		
+			if (pipe != NULL)
+			{
+				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+			}
+		}
 
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
@@ -461,15 +467,18 @@ int main( int argc, char **argv )
 #endif
 
 		//Movement Pipes
-		if (pipe != NULL)
+		for (Pipe * pipe : pipes)
 		{
-			pipe->Move(0.1f);
-			if (pipe->isOutOfMap())
+			if (pipe != NULL)
 			{
-				delete(pipe);
-				pipe = NULL;
+				pipe->Move(0.1f);
+				if (pipe->isOutOfMap())
+				{
+					delete(pipe);
+					pipe = new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -40.f), -80.f, 20.f);
+				}
 			}
-		}
+		}	
 
         // Check for errors
         checkError("End loop");

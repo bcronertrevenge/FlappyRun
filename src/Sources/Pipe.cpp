@@ -1,10 +1,11 @@
 #include "Pipe.h"
 
 
-Pipe::Pipe(glm::vec3 pos, float widthmap):
-	widthmap(widthmap)
+Pipe::Pipe(glm::vec3 pos, float startZ, float endZ):
+startZ(startZ), endZ(endZ)
 {
 	Position = glm::vec3(pos);
+	Position.z += startZ;
 	size = glm::vec3(2, 2, 4);
 }
 
@@ -25,7 +26,7 @@ glm::vec3 Pipe::GetPosition()
 
 bool Pipe::isOutOfMap()
 {
-	if (Position.z < -(widthmap / 2) || Position.z > widthmap / 2)
+	if (Position.z > endZ)
 	{
 		return true;
 	}
