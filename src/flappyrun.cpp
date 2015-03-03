@@ -477,6 +477,10 @@ int main( int argc, char **argv )
 					delete(pipe);
 					pipe = new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -40.f), -80.f, 20.f);
 				}
+				if (pipe->CheckHitPlayer(&player))
+				{
+					std::cout << "Collision" << std::endl;
+				}
 			}
 		}	
 

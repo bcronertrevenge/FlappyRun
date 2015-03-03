@@ -4,7 +4,7 @@
 Player::Player(float width) : hasBomb(false), isDead(false), width(width)
 {
 	Position = glm::vec3(0);
-	size = glm::vec3(2,2,3);
+	sizePlayer = 1;
 	speed = 0.1f;
 }
 
@@ -29,6 +29,11 @@ void Player::KillPlayer()
 glm::vec3 Player::GetPosition()
 {
 	return Position;
+}
+
+float Player::GetSize()
+{
+	return sizePlayer;
 }
 
 void Player::MoveLeft()

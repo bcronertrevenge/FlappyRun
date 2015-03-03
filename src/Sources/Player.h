@@ -12,12 +12,13 @@ public:
 	void KillPlayer();
 
 	glm::vec3 GetPosition();
+	float GetSize();
 	void MoveLeft();
 	void MoveRight();
 
 private:
 	glm::vec3 Position;
-	glm::vec3 size;
+	float sizePlayer;
 	bool hasBomb;
 	float speed;
 	bool isDead;
