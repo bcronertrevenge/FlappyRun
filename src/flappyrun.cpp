@@ -306,6 +306,9 @@ int main( int argc, char **argv )
     // Viewport 
     glViewport( 0, 0, width, height  );
 
+	int numberpipes = pipes.size();
+	float pipescrossed = 0;
+
     do
     {
         t = glfwGetTime();
@@ -458,6 +461,9 @@ int main( int argc, char **argv )
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
         imguiSlider("Instance count", &instanceCount, 1.0, 4096.0, 1);
+		float speed = player.GetSpeed();
+		imguiSlider("Speed", &speed, 0.1f, 1.f, 0.01f);
+		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
 
         imguiEndScrollArea();
         imguiEndFrame();
@@ -471,15 +477,21 @@ int main( int argc, char **argv )
 		{
 			if (pipe != NULL)
 			{
-				pipe->Move(0.1f);
+				pipe->Move(player.GetSpeed());
 				if (pipe->isOutOfMap())
 				{
+					++pipescrossed;
 					delete(pipe);
-					pipe = new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -40.f), -80.f, 20.f);
+					pipe = new Pipe(glm::vec3(rand() % 20 - 10, 0.f, -40.f), -80.f, 20.f);
+
+					if ((int)pipescrossed % numberpipes == 0)
+					{
+						player.SpeedUp();
+					}
 				}
 				if (pipe->CheckHitPlayer(&player))
 				{
-					std::cout << "Collision" << std::endl;
+					player.SlowDown();
 				}
 			}
 		}	
