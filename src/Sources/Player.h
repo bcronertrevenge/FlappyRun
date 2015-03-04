@@ -18,6 +18,7 @@ public:
 	void MoveRight();
 	void SpeedUp();
 	void SlowDown();
+	bool IsDead();
 
 private:
 	glm::vec3 Position;
@@ -26,5 +27,6 @@ private:
 	float speed;
 	bool isDead;
 	float width;
+
 };
 

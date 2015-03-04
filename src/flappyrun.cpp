@@ -26,6 +26,7 @@
 
 #include "Sources/Player.h"
 #include "Sources/Pipe.h"
+#include "Sources/Bird.h"
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
@@ -297,17 +298,30 @@ int main( int argc, char **argv )
 
 	Player player(10.f);
 	std::vector<Pipe*> pipes;
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, 0.f), -80.f, 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -20.f), -80.f, 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -40.f), -80.f, 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), -80.f, 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -100.f), -80.f, 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), -80.f, 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -100.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -160.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -180.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -220.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -220.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -240.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -260.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -280.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -300.f), 20.f));
+
+	std::vector<Bird*> birds;
+	birds.push_back(new Bird(&player));
+
     // Viewport 
     glViewport( 0, 0, width, height  );
 
-	int numberpipes = pipes.size();
+	int numberPipesBeforeSpeedUp = 4;
 	float pipescrossed = 0;
+	float combo = 0;
 
     do
     {
@@ -372,19 +386,22 @@ int main( int argc, char **argv )
             guiStates.lockPositionY = mousey;
         }
 
-		// Left
-		int leftPressed = glfwGetKey(window, GLFW_KEY_LEFT);
-		if (leftPressed == GLFW_PRESS)
+		if (player.IsDead() == false)
 		{
-			player.MoveLeft();
-		}
+			// Left
+			int leftPressed = glfwGetKey(window, GLFW_KEY_LEFT);
+			if (leftPressed == GLFW_PRESS)
+			{
+				player.MoveLeft();
+			}
 
-		// Right
-		int rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT);
-		if (rightPressed == GLFW_PRESS)
-		{
-			player.MoveRight();
-		}
+			// Right
+			int rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT);
+			if (rightPressed == GLFW_PRESS)
+			{
+				player.MoveRight();
+			}
+		}		
 
         // Default states
         glEnable(GL_DEPTH_TEST);
@@ -424,9 +441,18 @@ int main( int argc, char **argv )
 
 		for (Pipe * pipe : pipes)
 		{
-			if (pipe != NULL)
+			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+			}
+		}
+
+		for (Bird * bird : birds)
+		{
+			if (bird != NULL)
+			{
+				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
 			}
 		}
@@ -475,26 +501,63 @@ int main( int argc, char **argv )
 		//Movement Pipes
 		for (Pipe * pipe : pipes)
 		{
-			if (pipe != NULL)
+			if (pipe != NULL && player.IsDead() == false)
 			{
 				pipe->Move(player.GetSpeed());
-				if (pipe->isOutOfMap())
+
+				if (pipe->HasPassedPlayer(&player))
 				{
 					++pipescrossed;
-					delete(pipe);
-					pipe = new Pipe(glm::vec3(rand() % 20 - 10, 0.f, -40.f), -80.f, 20.f);
+					++combo;
 
-					if ((int)pipescrossed % numberpipes == 0)
+					if ((int)combo % numberPipesBeforeSpeedUp == 0)
 					{
 						player.SpeedUp();
 					}
 				}
-				if (pipe->CheckHitPlayer(&player))
+
+				if (pipe->isOutOfMap())
 				{
-					player.SlowDown();
+					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+				}
+
+				//If pipe didn't hit anything already, we check the collision
+				if (pipe->hasHit() == false)
+				{
+					if (pipe->CheckHitPlayer(&player))
+					{
+						player.SlowDown();
+						combo = 0;
+					}
+
+					/*for (Bird * bird : birds)
+					{
+						if (bird != NULL)
+						{
+							if (pipe->CheckHitBird(bird))
+							{
+								pipe->SetDraggedBird(bird);
+								bird->SetDragged(true);
+							}
+						}
+					}*/
 				}
 			}
 		}	
+
+		//Movement Birds
+		for (Bird * bird : birds)
+		{
+			if (bird != NULL && player.IsDead() == false)
+			{
+				bird->Move();
+				if (bird->CheckHitPlayer())
+				{
+					player.KillPlayer();
+				}
+			}
+		}
+		
 
         // Check for errors
         checkError("End loop");
@@ -510,6 +573,11 @@ int main( int argc, char **argv )
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
 
+	for (Pipe * pipe : pipes)
+	{
+		if (pipe != NULL)
+			delete(pipe);
+	}
     exit( EXIT_SUCCESS );
 }
 

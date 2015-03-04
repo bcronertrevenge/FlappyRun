@@ -5,7 +5,7 @@ Player::Player(float width) : hasBomb(false), isDead(false), width(width)
 {
 	Position = glm::vec3(0);
 	sizePlayer = 1;
-	speed = 0.1f;
+	speed = 0.25f;
 }
 
 
@@ -23,7 +23,7 @@ void Player::DropBomb()
 
 void Player::KillPlayer()
 {
-	//TODO
+	isDead = true;
 }
 
 glm::vec3 Player::GetPosition()
@@ -65,4 +65,9 @@ void Player::SpeedUp()
 void Player::SlowDown()
 {
 	speed = glm::max(speed - 0.2f, 0.1f);
+}
+
+bool Player::IsDead()
+{
+	return isDead;
 }

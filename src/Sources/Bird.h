@@ -10,11 +10,19 @@ public:
 	~Bird();
 
 	void KillBird();
+	glm::vec3 GetPosition();
+	void Move();
+	float GetSize();
+	bool CheckHitPlayer();
+	void SetDragged(bool _drag = true);
+	void SetPosZ(float z);
 
 private:
 	glm::vec3 Position;
-	glm::vec3 size;
+	float sizeBird;
 	float speed;
 	Player* player;
+	
+	bool isBirdDragged;
 };
 
