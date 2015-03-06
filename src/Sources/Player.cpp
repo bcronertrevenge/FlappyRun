@@ -1,7 +1,7 @@
 #include "Sources/Player.h"
+#include <iostream>
 
-
-Player::Player(float width) : hasBomb(false), isDead(false), width(width)
+Player::Player(float width) : hasBomb(false), isDead(false), width(width), BombPicked(NULL)
 {
 	Position = glm::vec3(0);
 	sizePlayer = 1;
@@ -13,11 +13,26 @@ Player::~Player()
 {
 }
 
+void Player::PickBomb(Bomb* bomb)
+{
+	BombPicked = bomb;
+	bomb->SetActive(false);
+	bomb->SetPicked(true);
+
+	std::cout << "Bomb Picked" << std::endl;
+}
+
 void Player::DropBomb()
 {
-	if (hasBomb)
+	if (BombPicked != NULL)
 	{
-		//TODO
+		BombPicked->SetPosition(glm::vec3(Position.x, Position.y, Position.z + 1.f));
+		BombPicked->SetActive(true);
+		BombPicked->SetPicked(false);
+		BombPicked->SetReadyToExplode(true);
+		BombPicked = NULL;
+
+		std::cout << "Bomb Dropped" << std::endl;
 	}
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "Sources/Bomb.h"
 
 class Player
 {
@@ -19,6 +20,7 @@ public:
 	void SpeedUp();
 	void SlowDown();
 	bool IsDead();
+	void PickBomb(Bomb* bomb);
 
 private:
 	glm::vec3 Position;
@@ -27,6 +29,6 @@ private:
 	float speed;
 	bool isDead;
 	float width;
-
+	Bomb * BombPicked;
 };
 

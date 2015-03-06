@@ -27,6 +27,7 @@
 #include "Sources/Player.h"
 #include "Sources/Pipe.h"
 #include "Sources/Bird.h"
+#include "Sources/Bomb.h"
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
@@ -91,7 +92,6 @@ const float GUIStates::MOUSE_PAN_SPEED = 0.001f;
 const float GUIStates::MOUSE_ZOOM_SPEED = 0.05f;
 const float GUIStates::MOUSE_TURN_SPEED = 0.005f;
 void init_gui_states(GUIStates & guiStates);
-
 
 int main( int argc, char **argv )
 {
@@ -300,26 +300,22 @@ int main( int argc, char **argv )
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -100.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -160.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -180.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -220.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -220.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -240.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -260.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -280.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -300.f), 20.f));
 
 	std::vector<Bird*> birds;
 	birds.push_back(new Bird(&player));
 
+	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
+
     // Viewport 
     glViewport( 0, 0, width, height  );
 
-	int numberPipesBeforeSpeedUp = 4;
+	int numberPipesBeforeSpeedUp = 6;
+	int numberPipesBeforeBomb = 6;
 	float pipescrossed = 0;
 	float combo = 0;
 
@@ -401,6 +397,13 @@ int main( int argc, char **argv )
 			{
 				player.MoveRight();
 			}
+
+			// Space
+			int spacePressed = glfwGetKey(window, GLFW_KEY_SPACE);
+			if (spacePressed == GLFW_PRESS)
+			{
+				player.DropBomb();
+			}
 		}		
 
         // Default states
@@ -455,6 +458,12 @@ int main( int argc, char **argv )
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
 			}
+		}
+
+		if (bomb.IsActive())
+		{
+			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
+			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
 		}
 
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
@@ -514,6 +523,12 @@ int main( int argc, char **argv )
 					{
 						player.SpeedUp();
 					}
+					if ((int)combo % numberPipesBeforeBomb == 0 && bomb.IsPicked() == false && bomb.IsActive() == false)
+					{
+						bomb.SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+						bomb.SetActive(true);
+					}
+						
 				}
 
 				if (pipe->isOutOfMap())
@@ -530,6 +545,7 @@ int main( int argc, char **argv )
 						combo = 0;
 					}
 
+					//A voir si on le met
 					/*for (Bird * bird : birds)
 					{
 						if (bird != NULL)
@@ -555,10 +571,30 @@ int main( int argc, char **argv )
 				{
 					player.KillPlayer();
 				}
+				else if (bomb.CheckHitBird(bird))
+				{
+					bomb.ExplodeBird(bird);
+				}
 			}
 		}
 		
+		//Movement Bomb
+		if (bomb.IsActive())
+		{
+			bomb.Move(player.GetSpeed());
 
+			if (bomb.CheckHitPlayer(&player))
+			{
+				player.PickBomb(&bomb);
+			}
+			else if (bomb.isOutOfMap())
+			{
+				bomb.SetActive(false);
+				bomb.SetReadyToExplode(false);
+			}
+		}		
+
+		
         // Check for errors
         checkError("End loop");
 
@@ -578,6 +614,13 @@ int main( int argc, char **argv )
 		if (pipe != NULL)
 			delete(pipe);
 	}
+
+	for (Bird * bird : birds)
+	{
+		if (bird != NULL)
+			delete(bird);
+	}
+
     exit( EXIT_SUCCESS );
 }
 

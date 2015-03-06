@@ -1,11 +1,11 @@
 #include "Bird.h"
-
+#include <iostream>
 
 Bird::Bird(Player* _player) : player(_player), isBirdDragged(false)
 {
 	Position = glm::vec3(player->GetPosition().x, player->GetPosition().y, player->GetPosition().z + 10.f);
 	sizeBird = 1;
-	speed = 0.005f;
+	speed = 0.0025f;
 }
 
 
@@ -20,6 +20,10 @@ void Bird::Move()
 	if (Position.z > player->GetPosition().z && player->GetSpeed() < 0.25f)
 	{
 		Position.z -= speed;
+	}
+	else if (Position.z < 10.f && player->GetSpeed() > 0.75f)
+	{
+		Position.z += speed;
 	}
 
 	if (Position.x < player->GetPosition().x)
@@ -40,6 +44,7 @@ void Bird::Move()
 void Bird::KillBird()
 {
 	//TODO
+	std::cout << "Boom" << std::endl;
 }
 
 glm::vec3 Bird::GetPosition()
