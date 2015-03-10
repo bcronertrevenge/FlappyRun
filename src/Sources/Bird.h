@@ -2,27 +2,24 @@
 
 #include <glm/glm.hpp>
 #include "Player.h"
+#include <vector>
 
-class Bird
+class Bird : public MovableObject
 {
 public:
-	Bird(Player* _player);
+	Bird(Player* _player, float posX);
 	~Bird();
 
-	void StepBack(float _step);
-	glm::vec3 GetPosition();
-	void Move();
-	float GetSize();
-	bool CheckHitPlayer();
-	void SetDragged(bool _drag = true);
+	void StepBack(float _step, const std::vector<Bird*>& birds);
+	void applyForce(glm::vec3 _pos);
+	void Move(const std::vector<Bird*>& birds);
 	void SetPosZ(float z);
-
+	
 private:
-	glm::vec3 Position;
-	float sizeBird;
 	float speedIncrement;
 	Player* player;
-	
+	float distanceMax;
+
 	bool isBirdDragged;
 };
 

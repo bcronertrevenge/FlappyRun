@@ -28,6 +28,9 @@
 #include "Sources/Pipe.h"
 #include "Sources/Bird.h"
 #include "Sources/Bomb.h"
+#include "Sources/ConstantForce.h"
+#include "Sources/LeapFrogSolver.h"
+#include "Sources/GroundForce.h"
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
@@ -295,6 +298,7 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Player player(10.f);
+
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
@@ -305,10 +309,27 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
 
 	std::vector<Bird*> birds;
-	birds.push_back(new Bird(&player));
+	birds.push_back(new Bird(&player, -20.f));
+	birds.push_back(new Bird(&player, 20.f));
+	birds.push_back(new Bird(&player, 0.f));
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
 
+	ConstantForce gravity(glm::vec3(0.f, -0.003f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 0.01f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 0.06f, 0.f));
+
+	LeapfrogSolver leapfrog;
+
+	GroundForce groundForce(1.f, leapfrog, -1.f);
+
+	std::vector<MovableObject*> objects;
+	objects.push_back(&player);
+
+	for (Bird *bird : birds)
+	{
+		objects.push_back(bird);
+	}
     // Viewport 
     glViewport( 0, 0, width, height  );
 
@@ -399,6 +420,13 @@ int main( int argc, char **argv )
 			// Space
 			int spacePressed = glfwGetKey(window, GLFW_KEY_SPACE);
 			if (spacePressed == GLFW_PRESS)
+			{
+				player.Jump(t);
+			}
+
+			// Enter
+			int enterPressed = glfwGetKey(window, GLFW_KEY_ENTER);
+			if (enterPressed == GLFW_PRESS)
 			{
 				player.DropBomb();
 			}
@@ -499,12 +527,35 @@ int main( int argc, char **argv )
 		float hasbomb = player.HasBomb();
 		imguiSlider("Bomb", &hasbomb, 0, 1, 1);
 
+		float x, y, z;
+		x = player.GetPosition().x;
+		y = player.GetPosition().y;
+		z = player.GetPosition().z;
+
+		imguiSlider("X", &x, -200, 200, 1);
+		imguiSlider("Y", &y, -200, 200, 1);
+		imguiSlider("Z", &z, -200, 200, 1);
+
         imguiEndScrollArea();
         imguiEndFrame();
         imguiRenderGLDraw(width, height);
 
         glDisable(GL_BLEND);
 #endif
+
+		//Force
+		if (player.IsDead() == false)
+		{
+			gravity.apply(objects);
+			groundForce.apply(objects);
+			if (player.IsJumping())
+			{
+				JumpForce.apply(&player);
+			}
+			leapfrog.solve(objects, t);
+
+			player.Move();
+		}		
 
 		//Movement Pipes
 		for (Pipe * pipe : pipes)
@@ -538,7 +589,7 @@ int main( int argc, char **argv )
 				//If pipe didn't hit anything already, we check the collision
 				if (pipe->hasHit() == false)
 				{
-					if (pipe->CheckHitPlayer(&player))
+					if (pipe->CheckHitObject(&player))
 					{
 						player.SlowDown();
 						combo = 0;
@@ -548,9 +599,9 @@ int main( int argc, char **argv )
 					{
 						if (bird != NULL)
 						{
-							if (pipe->CheckHitBird(bird))
+							if (pipe->CheckHitObject(bird))
 							{
-								bird->StepBack(1.f);
+								bird->StepBack(1.f, birds);
 							}
 						}
 					}
@@ -563,14 +614,14 @@ int main( int argc, char **argv )
 		{
 			if (bird != NULL && player.IsDead() == false)
 			{
-				bird->Move();
-				if (bird->CheckHitPlayer())
+				//bird->Move(birds);
+				if (bird->CheckHitObject(&player))
 				{
 					player.KillPlayer();
 				}
-				else if (bomb.CheckHitBird(bird))
+				else if (bomb.CheckHitObject(bird))
 				{
-					bomb.ExplodeBird(bird);
+					bomb.ExplodeBird(bird, birds);
 				}
 			}
 		}
@@ -580,7 +631,7 @@ int main( int argc, char **argv )
 		{
 			bomb.Move(player.GetSpeed());
 
-			if (bomb.CheckHitPlayer(&player))
+			if (bomb.CheckHitObject(&player))
 			{
 				player.PickBomb(&bomb);
 			}
@@ -599,6 +650,7 @@ int main( int argc, char **argv )
         glfwPollEvents();
 
         double newTime = glfwGetTime();
+		groundForce.setDt(newTime);
         fps = 1.f/ (newTime - t);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );

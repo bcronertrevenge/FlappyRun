@@ -1,10 +1,12 @@
 #include "Bird.h"
 #include <iostream>
 
-Bird::Bird(Player* _player) : player(_player), isBirdDragged(false)
+Bird::Bird(Player* _player, float posX) : 
+	distanceMax(7.f),
+	MovableObject(glm::vec3(0.f), 1),
+	player(_player)
 {
-	Position = glm::vec3(player->GetPosition().x, player->GetPosition().y, player->GetPosition().z + 10.f);
-	sizeBird = 1;
+	m_Position = glm::vec3(posX, player->GetPosition().y, player->GetPosition().z + distanceMax);
 	speedIncrement = 0.02f;
 }
 
@@ -13,66 +15,97 @@ Bird::~Bird()
 {
 }
 
-void Bird::Move()
+void Bird::Move(const std::vector<Bird*>& birds)
 {
-	if (isBirdDragged) return;
+	float oldPosX = m_Position.x;
+	float oldPosZ = m_Position.z;
 
-	if (Position.z > player->GetPosition().z && player->GetSpeed() <= player->GetMaxSpeed() / 2)
+	// Z
+	if (m_Position.z > player->GetPosition().z || m_Position.z < distanceMax)
 	{
-		//Position.z -= speedIncrement;
-		Position.z += (player->GetSpeed() - player->GetMaxSpeed() / 2) * speedIncrement;
+		m_Position.z += (player->GetSpeed() - player->GetMaxSpeed() / 2) * speedIncrement;
 	}
-	else if (Position.z < 10.f && player->GetSpeed() > player->GetMaxSpeed() / 2)
+	
+	for (Bird *bird : birds)
 	{
-		//Position.z += speedIncrement;
-		Position.z += (player->GetSpeed() - player->GetMaxSpeed() / 2) * speedIncrement;
-	}
-
-	if (Position.x < player->GetPosition().x)
-	{
-		Position.x += speedIncrement;
-	}
-	else if (Position.x > player->GetPosition().x)
-	{
-		Position.x -= speedIncrement;
+		if (bird != this && CheckHitObject(bird))
+		{
+			m_Position.z = oldPosZ;
+			break;
+		}
 	}
 
-	if (glm::abs(Position.x - player->GetPosition().x) < speedIncrement)
+	// X
+	if (m_Position.x < player->GetPosition().x)
 	{
-		Position.x = player->GetPosition().x;
+		m_Position.x += speedIncrement;
+	}
+	else if (m_Position.x > player->GetPosition().x)
+	{
+		m_Position.x -= speedIncrement;
+	}
+
+	if (glm::abs(m_Position.x - player->GetPosition().x) < speedIncrement)
+	{
+		m_Position.x = player->GetPosition().x;
+	}
+
+	for (Bird *bird : birds)
+	{
+		if (bird != this && CheckHitObject(bird))
+		{
+			m_Position.x = oldPosX;
+			break;
+		}
 	}
 }
 
-void Bird::StepBack(float _step)
+void Bird::StepBack(float _step, const std::vector<Bird*>& birds)
 {
-	Position.z = glm::min(Position.z + _step, player->GetPosition().z + 10.f);
-}
-
-glm::vec3 Bird::GetPosition()
-{
-	return Position;
-}
-
-float Bird::GetSize()
-{
-	return sizeBird;
-}
-
-bool Bird::CheckHitPlayer()
-{
-	if (glm::distance(player->GetPosition(), Position) < (sizeBird + player->GetSize()) / 2)
+	m_Position.z = glm::min(m_Position.z + _step, player->GetPosition().z + distanceMax);
+	
+	for (Bird * bird : birds)
 	{
-		return true;
-	}
-	return false;
-}
+		if (bird != this && CheckHitObject(bird))
+		{
+			// Decalement en X
+			if (m_Position.z >= player->GetPosition().z + distanceMax)
+			{
+				bool collision = true;
 
-void Bird::SetDragged(bool _drag)
-{
-	isBirdDragged = _drag;
+				while (collision == true)
+				{
+					collision = false;
+					m_Position.x += _step;
+
+					for (Bird * bird : birds)
+					{
+						if (bird != this && CheckHitObject(bird))
+						{
+							collision = true;
+						}
+					}
+				}	
+			}
+			else
+			{
+				//Decalement en Z
+				StepBack(_step, birds);
+			}
+			
+			break;
+		}
+	}
 }
 
 void Bird::SetPosZ(float z)
 {
-	Position.z = z;
+	m_Position.z = z;
+}
+
+void Bird::applyForce(glm::vec3 _pos)
+{
+	m_Position += _pos;
+
+	if (m_Position.y < 0.f) m_Position.y = 0.f;
 }
