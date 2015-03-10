@@ -37,6 +37,7 @@ bool Pipe::CheckHitBird(Bird *_bird)
 {
 	if (glm::distance(_bird->GetPosition(), Position) < (sizePipe + _bird->GetSize()) / 2)
 	{
+		hit = true;
 		return true;
 	}
 	return false;

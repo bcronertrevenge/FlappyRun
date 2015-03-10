@@ -11,7 +11,6 @@ precision highp int;
 uniform mat4 MVP;
 uniform mat4 MV;
 uniform float Time;
-uniform int InstanceCount;
 
 const float PI = 3.14159265359;
 const float TWOPI = 6.28318530718;
@@ -50,7 +49,7 @@ void main()
 
 	float theta_sub;
 	float phi_sub;
-	theta_sub = phi_sub = sqrt(InstanceCount);
+	theta_sub = phi_sub = 1;
 	float theta = floor(gl_InstanceID/theta_sub)  * (PI/theta_sub) - PI_2;
 	float phi = (gl_InstanceID - (phi_sub * floor(gl_InstanceID/phi_sub)))   * (TWOPI/phi_sub) - PI; 
 	float ctheta = cos(theta);
