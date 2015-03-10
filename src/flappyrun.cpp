@@ -6,6 +6,7 @@
 #include <string.h>
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include <cmath>
 
@@ -22,6 +23,11 @@
 #include "glm/mat4x4.hpp" // glm::mat4
 #include "glm/gtc/matrix_transform.hpp" // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include "glm/gtc/type_ptr.hpp" // glm::value_ptr
+
+#include "Sources/Player.h"
+#include "Sources/Pipe.h"
+#include "Sources/Bird.h"
+#include "Sources/Bomb.h"
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
@@ -86,7 +92,6 @@ const float GUIStates::MOUSE_PAN_SPEED = 0.001f;
 const float GUIStates::MOUSE_ZOOM_SPEED = 0.05f;
 const float GUIStates::MOUSE_TURN_SPEED = 0.005f;
 void init_gui_states(GUIStates & guiStates);
-
 
 int main( int argc, char **argv )
 {
@@ -208,6 +213,7 @@ int main( int argc, char **argv )
     GLuint diffuseLocation = glGetUniformLocation(programObject, "Diffuse");
     GLuint specLocation = glGetUniformLocation(programObject, "Specular");
     GLuint lightLocation = glGetUniformLocation(programObject, "Light");
+	GLuint TransLocation = glGetUniformLocation(programObject, "TranslationPlayer");
     GLuint specularPowerLocation = glGetUniformLocation(programObject, "SpecularPower");
     GLuint instanceCountLocation = glGetUniformLocation(programObject, "InstanceCount");
     glProgramUniform1i(programObject, diffuseLocation, 0);
@@ -224,19 +230,15 @@ int main( int argc, char **argv )
     int plane_triangleCount = 2;
     int plane_triangleList[] = {
 			0, 1, 2, 2, 1, 3,
-			0, 1, 2, 2, 1, 3 
 	};
     float plane_uvs[] = {
 			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f,
-			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f 
 	};
     float plane_vertices[] = {
-			-50.0, -1.0, 50.0, 50.0, -1.0, 50.0, -50.0, -1.0, -50.0, 50.0, -1.0, -50.0,
-			-50.0, 2.0, 50.0, 50.0, 2.0, 50.0, -50.0, 2.0, -50.0, 50.0, 2.0, -50.0 
+			-50.0, -1.0, 20.0, 50.0, -1.0, 20.0, -50.0, -1.0, -80.0, 50.0, -1.0, -80.0
 	};
     float plane_normals[] = {
 			0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-			0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0 
 	};
 
     // Vertex Array Object
@@ -294,8 +296,28 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	Player player(10.f);
+	std::vector<Pipe*> pipes;
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -160.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
+
+	std::vector<Bird*> birds;
+	birds.push_back(new Bird(&player));
+
+	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
+
     // Viewport 
     glViewport( 0, 0, width, height  );
+
+	int numberPipesBeforeSpeedUp = 6;
+	int numberPipesBeforeBomb = 6;
+	float pipescrossed = 0;
+	float combo = 0;
 
     do
     {
@@ -360,6 +382,30 @@ int main( int argc, char **argv )
             guiStates.lockPositionY = mousey;
         }
 
+		if (player.IsDead() == false)
+		{
+			// Left
+			int leftPressed = glfwGetKey(window, GLFW_KEY_LEFT);
+			if (leftPressed == GLFW_PRESS)
+			{
+				player.MoveLeft();
+			}
+
+			// Right
+			int rightPressed = glfwGetKey(window, GLFW_KEY_RIGHT);
+			if (rightPressed == GLFW_PRESS)
+			{
+				player.MoveRight();
+			}
+
+			// Space
+			int spacePressed = glfwGetKey(window, GLFW_KEY_SPACE);
+			if (spacePressed == GLFW_PRESS)
+			{
+				player.DropBomb();
+			}
+		}		
+
         // Default states
         glEnable(GL_DEPTH_TEST);
 
@@ -393,10 +439,37 @@ int main( int argc, char **argv )
 
         // Render vaos
         glBindVertexArray(vao[0]);
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int) instanceCount);
+
+		for (Pipe * pipe : pipes)
+		{
+			if (pipe != NULL && pipe->hasHit() == false)
+			{
+				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+			}
+		}
+
+		for (Bird * bird : birds)
+		{
+			if (bird != NULL)
+			{
+				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+			}
+		}
+
+		if (bomb.IsActive())
+		{
+			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
+			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+		}
+
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
-        glDrawElementsInstanced(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
 
 #if 1
         // Draw UI
@@ -423,6 +496,9 @@ int main( int argc, char **argv )
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
         imguiSlider("Instance count", &instanceCount, 1.0, 4096.0, 1);
+		float speed = player.GetSpeed();
+		imguiSlider("Speed", &speed, 0.1f, 1.f, 0.01f);
+		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
 
         imguiEndScrollArea();
         imguiEndFrame();
@@ -430,6 +506,95 @@ int main( int argc, char **argv )
 
         glDisable(GL_BLEND);
 #endif
+
+		//Movement Pipes
+		for (Pipe * pipe : pipes)
+		{
+			if (pipe != NULL && player.IsDead() == false)
+			{
+				pipe->Move(player.GetSpeed());
+
+				if (pipe->HasPassedPlayer(&player))
+				{
+					++pipescrossed;
+					++combo;
+
+					if ((int)combo % numberPipesBeforeSpeedUp == 0)
+					{
+						player.SpeedUp();
+					}
+					if ((int)combo % numberPipesBeforeBomb == 0 && bomb.IsPicked() == false && bomb.IsActive() == false)
+					{
+						bomb.SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+						bomb.SetActive(true);
+					}
+						
+				}
+
+				if (pipe->isOutOfMap())
+				{
+					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+				}
+
+				//If pipe didn't hit anything already, we check the collision
+				if (pipe->hasHit() == false)
+				{
+					if (pipe->CheckHitPlayer(&player))
+					{
+						player.SlowDown();
+						combo = 0;
+					}
+
+					//A voir si on le met
+					/*for (Bird * bird : birds)
+					{
+						if (bird != NULL)
+						{
+							if (pipe->CheckHitBird(bird))
+							{
+								pipe->SetDraggedBird(bird);
+								bird->SetDragged(true);
+							}
+						}
+					}*/
+				}
+			}
+		}	
+
+		//Movement Birds
+		for (Bird * bird : birds)
+		{
+			if (bird != NULL && player.IsDead() == false)
+			{
+				bird->Move();
+				if (bird->CheckHitPlayer())
+				{
+					player.KillPlayer();
+				}
+				else if (bomb.CheckHitBird(bird))
+				{
+					bomb.ExplodeBird(bird);
+				}
+			}
+		}
+		
+		//Movement Bomb
+		if (bomb.IsActive())
+		{
+			bomb.Move(player.GetSpeed());
+
+			if (bomb.CheckHitPlayer(&player))
+			{
+				player.PickBomb(&bomb);
+			}
+			else if (bomb.isOutOfMap())
+			{
+				bomb.SetActive(false);
+				bomb.SetReadyToExplode(false);
+			}
+		}		
+
+		
         // Check for errors
         checkError("End loop");
 
@@ -443,6 +608,18 @@ int main( int argc, char **argv )
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
+
+	for (Pipe * pipe : pipes)
+	{
+		if (pipe != NULL)
+			delete(pipe);
+	}
+
+	for (Bird * bird : birds)
+	{
+		if (bird != NULL)
+			delete(bird);
+	}
 
     exit( EXIT_SUCCESS );
 }
