@@ -167,8 +167,8 @@ int main( int argc, char **argv )
     float instanceCount = 1.f;
 
     // Load images and upload textures
-    GLuint textures[2];
-    glGenTextures(2, textures);
+    GLuint textures[4];
+    glGenTextures(4, textures);
     int x;
     int y;
     int comp;
@@ -183,7 +183,7 @@ int main( int argc, char **argv )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     fprintf(stderr, "Diffuse %dx%d:%d\n", x, y, comp);
 
-    unsigned char * spec = stbi_load("textures/spnza_bricks_a_spec.tga", &x, &y, &comp, 1);
+    unsigned char * spec = stbi_load("textures/spnza_bricks_a_spec.tga", &x, &y, &comp, 2);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textures[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, x, y, 0, GL_RED, GL_UNSIGNED_BYTE, spec);
@@ -192,6 +192,26 @@ int main( int argc, char **argv )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     fprintf(stderr, "Spec %dx%d:%d\n", x, y, comp);
+
+	unsigned char * pipeTexture = stbi_load("textures/pipe.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, textures[2]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pipeTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Pipe %dx%d:%d\n", x, y, comp);
+	
+	unsigned char * bombTexture = stbi_load("textures/bomb.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, bombTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Bomb %dx%d:%d\n", x, y, comp);
     checkError("Texture Initialization");
 
     // Try to load and compile shaders
@@ -218,6 +238,7 @@ int main( int argc, char **argv )
     GLuint instanceCountLocation = glGetUniformLocation(programObject, "InstanceCount");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
+
     if (!checkError("Uniforms"))
         exit(1);
 
@@ -442,6 +463,10 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int) instanceCount);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
@@ -451,6 +476,10 @@ int main( int argc, char **argv )
 			}
 		}
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[1]);
 		for (Bird * bird : birds)
 		{
 			if (bird != NULL)
@@ -460,12 +489,20 @@ int main( int argc, char **argv )
 			}
 		}
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[3]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[3]);
 		if (bomb.IsActive())
 		{
 			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
 			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
 		}
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[1]);
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
