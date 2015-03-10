@@ -4,7 +4,8 @@
 Bird::Bird(Player* _player, float posX) : 
 	distanceMax(7.f),
 	MovableObject(glm::vec3(0.f), 1),
-	player(_player)
+	player(_player),
+	LastFlap(0.f)
 {
 	m_Position = glm::vec3(posX, player->GetPosition().y, player->GetPosition().z + distanceMax);
 	speedIncrement = 0.02f;
@@ -108,4 +109,20 @@ void Bird::applyForce(glm::vec3 _pos)
 	m_Position += _pos;
 
 	if (m_Position.y < 0.f) m_Position.y = 0.f;
+}
+
+bool Bird::HasToFlap(float dt)
+{
+	if (player->GetPosition().y > m_Position.y && (dt - LastFlap > 0.5f))
+	{
+		LastFlap = dt;
+		return true;
+	}
+	else if (dt - LastFlap > 1.f)
+	{
+		LastFlap = dt;
+		return true;
+	}
+
+	return false;
 }

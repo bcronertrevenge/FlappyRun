@@ -7,7 +7,7 @@ Player::Player(float width) : MovableObject(glm::vec3(0), 1), hasBomb(false), is
 	speedMax = 0.75f;
 	speedMin = 0.1f;
 
-	heightMax = 2.f;
+	heightMax = 1.f;
 	ascending = true;
 	jumping = false;
 	speedJump = 0.2f;
@@ -100,11 +100,10 @@ float Player::GetMaxSpeed()
 
 void Player::Jump(float _time)
 {
-	if (jumping || _time - LastTimeJump < 1.f) // A changer
+	if (jumping || _time - LastTimeJump < 1.f) // A changer pour sauter moins souvent
 		return;
 
 	jumping = true;
-	ascending = true;
 	LastTimeJump = _time;
 }
 

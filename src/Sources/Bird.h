@@ -14,12 +14,13 @@ public:
 	void applyForce(glm::vec3 _pos);
 	void Move(const std::vector<Bird*>& birds);
 	void SetPosZ(float z);
-	
+	bool HasToFlap(float dt);
+
 private:
 	float speedIncrement;
 	Player* player;
 	float distanceMax;
 
-	bool isBirdDragged;
+	float LastFlap;
 };
 

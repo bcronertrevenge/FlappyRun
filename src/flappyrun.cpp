@@ -336,9 +336,9 @@ int main( int argc, char **argv )
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
 
-	ConstantForce gravity(glm::vec3(0.f, -0.003f, 0.f));
-	ConstantForce JumpForce(glm::vec3(0.f, 0.01f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 0.06f, 0.f));
+	ConstantForce gravity(glm::vec3(0.f, -0.0001f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 0.0002f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 0.004f, 0.f));
 
 	LeapfrogSolver leapfrog;
 
@@ -358,11 +358,12 @@ int main( int argc, char **argv )
 	int numberPipesBeforeBomb = 6;
 	float pipescrossed = 0;
 	float combo = 0;
+	float StartTime = glfwGetTime();
 
     do
     {
-        t = glfwGetTime();
-
+		t = (glfwGetTime() - StartTime);
+		
         // Mouse states
         int leftButton = glfwGetMouseButton( window, GLFW_MOUSE_BUTTON_LEFT );
         int rightButton = glfwGetMouseButton( window, GLFW_MOUSE_BUTTON_RIGHT );
@@ -520,7 +521,7 @@ int main( int argc, char **argv )
 		glBindTexture(GL_TEXTURE_2D, textures[3]);
 		if (bomb.IsActive())
 		{
-			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
+			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y, bomb.GetPosition().z)));
 			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 		}
 
@@ -569,9 +570,20 @@ int main( int argc, char **argv )
 		y = player.GetPosition().y;
 		z = player.GetPosition().z;
 
-		imguiSlider("X", &x, -200, 200, 1);
-		imguiSlider("Y", &y, -200, 200, 1);
-		imguiSlider("Z", &z, -200, 200, 1);
+		imguiSlider("PosX", &x, -200, 200, 1);
+		imguiSlider("PosY", &y, -200, 200, 1);
+		imguiSlider("PosZ", &z, -200, 200, 1);
+
+		x = player.GetForce().x;
+		y = player.GetForce().y;
+		z = player.GetForce().z;
+
+		imguiSlider("VelX", &x, -200, 200, 1);
+		imguiSlider("VelY", &y, -200, 200, 1);
+		imguiSlider("VelZ", &z, -200, 200, 1);
+
+		float dt = t;
+		imguiSlider("dt", &dt, 0, 200, 1);
 
         imguiEndScrollArea();
         imguiEndFrame();
@@ -583,12 +595,16 @@ int main( int argc, char **argv )
 		//Force
 		if (player.IsDead() == false)
 		{
+			groundForce.setDt(t);
+
 			gravity.apply(objects);
 			groundForce.apply(objects);
+
 			if (player.IsJumping())
 			{
 				JumpForce.apply(&player);
 			}
+			
 			leapfrog.solve(objects, t);
 
 			player.Move();
@@ -623,7 +639,7 @@ int main( int argc, char **argv )
 					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
 				}
 
-				//If pipe didn't hit anything already, we check the collision
+				//If pipe didn't hit anything yet, we check the collision
 				if (pipe->hasHit() == false)
 				{
 					if (pipe->CheckHitObject(&player))
@@ -652,6 +668,10 @@ int main( int argc, char **argv )
 			if (bird != NULL && player.IsDead() == false)
 			{
 				//bird->Move(birds);
+				if (bird->HasToFlap(t))
+				{
+					FlapForce.apply(bird);
+				}
 				if (bird->CheckHitObject(&player))
 				{
 					player.KillPlayer();
@@ -686,9 +706,8 @@ int main( int argc, char **argv )
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        double newTime = glfwGetTime();
-		groundForce.setDt(newTime);
-        fps = 1.f/ (newTime - t);
+		float newTime = glfwGetTime();		
+		fps = 1.f / (newTime - t);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );
 

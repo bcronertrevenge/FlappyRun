@@ -26,7 +26,7 @@ void GroundForce::apply(const std::vector<MovableObject*>& objects)
 	{
 		ObjectState state = m_Solver->getNextState(obj, m_fDt);
 
-		if (state.position.y - obj->GetSize() <= groundY)
+		if (state.position.y - obj->GetSize() < groundY)
 		{
 			obj->AddForce(m_fElasticity * glm::dot(state.velocity, -normal) * (obj->GetMass() / m_fDt) * normal);
 			obj->GetPosition();
@@ -41,7 +41,7 @@ void GroundForce::apply(MovableObject* obj)
 	ObjectState state = m_Solver->getNextState(obj, m_fDt);
 	glm::vec3 normal(0.f, 1.f, 0.f);
 
-	if (state.position.y - obj->GetSize() <= groundY)
+	if (state.position.y - obj->GetSize() < groundY)
 	{
 		obj->AddForce(m_fElasticity * glm::dot(state.velocity, -normal) * (obj->GetMass() / m_fDt) * normal);
 	}
