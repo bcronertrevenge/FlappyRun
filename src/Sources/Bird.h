@@ -9,7 +9,7 @@ public:
 	Bird(Player* _player);
 	~Bird();
 
-	void KillBird();
+	void StepBack(float _step);
 	glm::vec3 GetPosition();
 	void Move();
 	float GetSize();
@@ -20,7 +20,7 @@ public:
 private:
 	glm::vec3 Position;
 	float sizeBird;
-	float speed;
+	float speedIncrement;
 	Player* player;
 	
 	bool isBirdDragged;

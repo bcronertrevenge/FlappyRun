@@ -164,7 +164,6 @@ int main( int argc, char **argv )
     camera_defaults(camera);
     GUIStates guiStates;
     init_gui_states(guiStates);
-    float instanceCount = 1.f;
 
     // Load images and upload textures
     GLuint textures[2];
@@ -215,7 +214,6 @@ int main( int argc, char **argv )
     GLuint lightLocation = glGetUniformLocation(programObject, "Light");
 	GLuint TransLocation = glGetUniformLocation(programObject, "TranslationPlayer");
     GLuint specularPowerLocation = glGetUniformLocation(programObject, "SpecularPower");
-    GLuint instanceCountLocation = glGetUniformLocation(programObject, "InstanceCount");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
     if (!checkError("Uniforms"))
@@ -433,21 +431,20 @@ int main( int argc, char **argv )
         glProgramUniformMatrix4fv(programObject, mvpLocation, 1, 0, glm::value_ptr(mvp));
         glProgramUniformMatrix4fv(programObject, mvLocation, 1, 0, glm::value_ptr(mv));
         glProgramUniform3fv(programObject, lightLocation, 1, glm::value_ptr(glm::vec3(light) / light.w));
-        glProgramUniform1i(programObject, instanceCountLocation, (int) instanceCount);
         glProgramUniform1f(programObject, specularPowerLocation, 30.f);
         //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
         glBindVertexArray(vao[0]);
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
-        glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int) instanceCount);
+        glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
-				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
 
@@ -456,14 +453,14 @@ int main( int argc, char **argv )
 			if (bird != NULL)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
-				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
 
 		if (bomb.IsActive())
 		{
 			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
-			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)instanceCount);
+			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 		}
 
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
@@ -495,10 +492,12 @@ int main( int argc, char **argv )
         imguiBeginScrollArea("aogl", width - 210, height - 310, 200, 300, &logScroll);
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
-        imguiSlider("Instance count", &instanceCount, 1.0, 4096.0, 1);
 		float speed = player.GetSpeed();
 		imguiSlider("Speed", &speed, 0.1f, 1.f, 0.01f);
 		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
+
+		float hasbomb = player.HasBomb();
+		imguiSlider("Bomb", &hasbomb, 0, 1, 1);
 
         imguiEndScrollArea();
         imguiEndFrame();
@@ -545,18 +544,16 @@ int main( int argc, char **argv )
 						combo = 0;
 					}
 
-					//A voir si on le met
-					/*for (Bird * bird : birds)
+					for (Bird * bird : birds)
 					{
 						if (bird != NULL)
 						{
 							if (pipe->CheckHitBird(bird))
 							{
-								pipe->SetDraggedBird(bird);
-								bird->SetDragged(true);
+								bird->StepBack(1.f);
 							}
 						}
-					}*/
+					}
 				}
 			}
 		}	
@@ -579,7 +576,7 @@ int main( int argc, char **argv )
 		}
 		
 		//Movement Bomb
-		if (bomb.IsActive())
+		if (bomb.IsActive() && player.IsDead() == false)
 		{
 			bomb.Move(player.GetSpeed());
 

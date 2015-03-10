@@ -19,7 +19,7 @@ void Bomb::ExplodeBird(Bird* bird)
 	Position.x = rand() % 15 - 10.f;
 	Position.z = -80.f;
 	readyToExplode = false;
-	bird->KillBird();
+	bird->StepBack(4.f);
 }
 
 void Bomb::Move(float speed)

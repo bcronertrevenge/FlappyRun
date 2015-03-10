@@ -21,6 +21,8 @@ public:
 	void SlowDown();
 	bool IsDead();
 	void PickBomb(Bomb* bomb);
+	bool HasBomb();
+	float GetMaxSpeed();
 
 private:
 	glm::vec3 Position;
@@ -30,5 +32,7 @@ private:
 	bool isDead;
 	float width;
 	Bomb * BombPicked;
+	float speedMax;
+	float speedMin;
 };
 
