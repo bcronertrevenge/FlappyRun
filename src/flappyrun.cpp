@@ -222,10 +222,22 @@ int main( int argc, char **argv )
     float cube_vertices[] = {-0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5 };
     float cube_normals[] = {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, };
     int plane_triangleCount = 2;
-    int plane_triangleList[] = {0, 1, 2, 2, 1, 3}; 
-    float plane_uvs[] = {0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f};
-    float plane_vertices[] = {-50.0, -1.0, 50.0, 50.0, -1.0, 50.0, -50.0, -1.0, -50.0, 50.0, -1.0, -50.0};
-    float plane_normals[] = {0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
+    int plane_triangleList[] = {
+			0, 1, 2, 2, 1, 3,
+			0, 1, 2, 2, 1, 3 
+	};
+    float plane_uvs[] = {
+			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f,
+			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f 
+	};
+    float plane_vertices[] = {
+			-50.0, -1.0, 50.0, 50.0, -1.0, 50.0, -50.0, -1.0, -50.0, 50.0, -1.0, -50.0,
+			-50.0, 2.0, 50.0, 50.0, 2.0, 50.0, -50.0, 2.0, -50.0, 50.0, 2.0, -50.0 
+	};
+    float plane_normals[] = {
+			0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+			0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0 
+	};
 
     // Vertex Array Object
     GLuint vao[2];
@@ -377,14 +389,14 @@ int main( int argc, char **argv )
         glProgramUniform3fv(programObject, lightLocation, 1, glm::value_ptr(glm::vec3(light) / light.w));
         glProgramUniform1i(programObject, instanceCountLocation, (int) instanceCount);
         glProgramUniform1f(programObject, specularPowerLocation, 30.f);
-        glProgramUniform1f(programObject, timeLocation, t);
+        //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
         glBindVertexArray(vao[0]);
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int) instanceCount);
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
-        glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+        glDrawElementsInstanced(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
 
 #if 1
         // Draw UI
