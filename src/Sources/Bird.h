@@ -11,7 +11,7 @@ public:
 	~Bird();
 
 	void applyForce(glm::vec3 _pos);
-	void Move(const std::vector<Bird*>& birds);
+	void Move(const std::vector<Bird*>& birds, float dt);
 	void SetPosZ(float z);
 	bool HasToFlap(float dt);
 

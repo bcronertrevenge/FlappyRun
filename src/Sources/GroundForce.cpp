@@ -29,7 +29,6 @@ void GroundForce::apply(const std::vector<MovableObject*>& objects)
 		if ((state.position.y - obj->GetSize() / 2 < groundYZ && ground && !superior) || (state.position.z - obj->GetSize() / 2 < groundYZ && !ground && !superior) || (state.position.y + obj->GetSize() / 2 > groundYZ && ground && superior) || (state.position.z + obj->GetSize() / 2 > groundYZ && !ground && superior))
 		{
 			obj->AddForce(m_fElasticity * glm::dot(state.velocity, -normal) * (obj->GetMass() / m_fDt) * normal);
-			obj->GetPosition();
 		}
 	}
 }

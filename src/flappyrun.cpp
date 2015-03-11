@@ -655,7 +655,7 @@ int main( int argc, char **argv )
 		{
 			if (bird != NULL && player.IsDead() == false)
 			{
-				bird->Move(birds);
+				bird->Move(birds, dt);
 				backWallForce.apply(bird);
 				frontWallForce.apply(bird);
 				MovementBird.apply(bird);

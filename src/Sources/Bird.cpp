@@ -1,4 +1,5 @@
 #include "Bird.h"
+#include "ConstantForce.h"
 #include <iostream>
 
 Bird::Bird(Player* _player, float posX) : 
@@ -16,33 +17,39 @@ Bird::~Bird()
 {
 }
 
-void Bird::Move(const std::vector<Bird*>& birds)
+void Bird::Move(const std::vector<Bird*>& birds, float dt)
 {
 	float oldPosX = m_Position.x;
-	float oldPosZ = m_Position.z;
 
 	if (m_Position.x < player->GetPosition().x)
 	{
-		m_Position.x += speedIncrement;
+		ConstantForce PushX(glm::vec3(0.75f, 0.f, 0.f));
+		PushX.apply(this);
 	}
 	else if (m_Position.x > player->GetPosition().x)
 	{
-		m_Position.x -= speedIncrement;
+		ConstantForce PushX(glm::vec3(-0.75f, 0.f, 0.f));
+		PushX.apply(this);
 	}
 
-	if (glm::abs(m_Position.x - player->GetPosition().x) < speedIncrement)
-	{
-		m_Position.x = player->GetPosition().x;
-	}
-
-	/*for (Bird *bird : birds)
+	for (Bird *bird : birds)
 	{
 		if (bird != this && CheckHitObject(bird))
 		{
-			m_Position.x = oldPosX;
+			if (oldPosX > m_Position.x)
+			{
+				glm::vec3 normal(-1.f, 0.f, 0.f);
+				bird->AddForce(2.f * glm::dot(bird->GetVelocity(), -normal) * (bird->GetMass() / dt) * normal);
+			}
+			else
+			{
+				glm::vec3 normal(1.f, 0.f, 0.f);
+				bird->AddForce(2.f * glm::dot(bird->GetVelocity(), -normal) * (bird->GetMass() / dt) * normal);
+			}
+						
 			break;
 		}
-	}*/
+	}
 }
 
 /*void Bird::StepBack(float _step, const std::vector<Bird*>& birds)
