@@ -23,6 +23,7 @@
 #include "glm/mat4x4.hpp" // glm::mat4
 #include "glm/gtc/matrix_transform.hpp" // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include "glm/gtc/type_ptr.hpp" // glm::value_ptr
+#include "glm/gtx/rotate_vector.hpp""
 
 #include "Sources/Player.h"
 #include "Sources/Pipe.h"
@@ -224,7 +225,27 @@ int main( int argc, char **argv )
     glLinkProgram(programObject);
     if (check_link_error(programObject) < 0)
         exit(1);
-    
+
+	// Try to load and compile gbuffer shaders
+	GLuint vertgbufferShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\gbuffer.vert");
+	GLuint fraggbufferShaderId = compile_shader_from_file(GL_FRAGMENT_SHADER, "src\\Shaders\\gbuffer.frag");
+	GLuint gbufferProgramObject = glCreateProgram();
+	glAttachShader(gbufferProgramObject, vertgbufferShaderId);
+	glAttachShader(gbufferProgramObject, fraggbufferShaderId);
+	glLinkProgram(gbufferProgramObject);
+	if (check_link_error(gbufferProgramObject) < 0)
+		exit(1);
+
+	// Try to load and compile directionalLight shaders
+	GLuint vertLightShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\light.vert");
+	GLuint fragDirectionalLightShaderId = compile_shader_from_file(GL_FRAGMENT_SHADER, "src\\Shaders\\directionalLight.frag");
+	GLuint directionalLightProgramObject = glCreateProgram();
+	glAttachShader(directionalLightProgramObject, vertLightShaderId);
+	glAttachShader(directionalLightProgramObject, fragDirectionalLightShaderId);
+	glLinkProgram(directionalLightProgramObject);
+	if (check_link_error(directionalLightProgramObject) < 0)
+		exit(1);
+
     // Upload uniforms
     GLuint mvpLocation = glGetUniformLocation(programObject, "MVP");
     GLuint mvLocation = glGetUniformLocation(programObject, "MV");
@@ -236,6 +257,28 @@ int main( int argc, char **argv )
     GLuint specularPowerLocation = glGetUniformLocation(programObject, "SpecularPower");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
+
+	GLuint mvpGBLocation = glGetUniformLocation(gbufferProgramObject, "MVP");
+	GLuint mvGBLocation = glGetUniformLocation(gbufferProgramObject, "MV");
+	GLuint timeGBLocation = glGetUniformLocation(gbufferProgramObject, "Time");
+	GLuint diffuseGBLocation = glGetUniformLocation(gbufferProgramObject, "Diffuse");
+	GLuint specGBLocation = glGetUniformLocation(gbufferProgramObject, "Specular");
+	GLuint lightGBLocation = glGetUniformLocation(gbufferProgramObject, "Light");
+	GLuint specularPowerGBLocation = glGetUniformLocation(gbufferProgramObject, "SpecularPower");
+	GLuint instanceCountGBLocation = glGetUniformLocation(gbufferProgramObject, "InstanceCount");
+	glProgramUniform1i(gbufferProgramObject, diffuseGBLocation, 0);
+	glProgramUniform1i(gbufferProgramObject, specGBLocation, 1);
+
+	GLuint directionalLightColorLocation = glGetUniformLocation(directionalLightProgramObject, "ColorBuffer");
+	GLuint directionalLightNormalLocation = glGetUniformLocation(directionalLightProgramObject, "NormalBuffer");
+	GLuint directionalLightDepthLocation = glGetUniformLocation(directionalLightProgramObject, "DepthBuffer");
+	GLuint directionalLightColorLightLocation = glGetUniformLocation(directionalLightProgramObject, "ColorLight");
+	GLuint directionalLightDirectionLightLocation = glGetUniformLocation(directionalLightProgramObject, "DirectionLight");
+	GLuint directionalLightIntensityLightLocation = glGetUniformLocation(directionalLightProgramObject, "IntensityLight");
+	GLuint directionalInverseProjectionLocation = glGetUniformLocation(directionalLightProgramObject, "InverseProjection");
+	glProgramUniform1i(directionalLightProgramObject, directionalLightColorLocation, 0);
+	glProgramUniform1i(directionalLightProgramObject, directionalLightNormalLocation, 1);
+	glProgramUniform1i(directionalLightProgramObject, directionalLightDepthLocation, 2);
 
     if (!checkError("Uniforms"))
         exit(1);
@@ -330,6 +373,13 @@ int main( int argc, char **argv )
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
 
+	// Disable the depth test
+	glDisable(GL_DEPTH_TEST);
+	// Enable blending
+	glEnable(GL_BLEND);
+	// Setup additive blending
+	glBlendFunc(GL_ONE, GL_ONE);
+
     // Viewport 
     glViewport( 0, 0, width, height  );
 
@@ -337,6 +387,55 @@ int main( int argc, char **argv )
 	int numberPipesBeforeBomb = 6;
 	float pipescrossed = 0;
 	float combo = 0;
+
+	// Init frame buffers
+	GLuint gbufferFbo;
+	GLuint gbufferTextures[3];
+	GLuint gbufferDrawBuffers[2];
+	glGenTextures(3, gbufferTextures);
+
+	// Create color texture
+	glBindTexture(GL_TEXTURE_2D, gbufferTextures[0]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Create normal texture
+	glBindTexture(GL_TEXTURE_2D, gbufferTextures[1]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Create depth texture
+	glBindTexture(GL_TEXTURE_2D, gbufferTextures[2]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Create Framebuffer Object
+	glGenFramebuffers(1, &gbufferFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, gbufferFbo);
+	gbufferDrawBuffers[0] = GL_COLOR_ATTACHMENT0;
+	gbufferDrawBuffers[1] = GL_COLOR_ATTACHMENT1;
+	glDrawBuffers(2, gbufferDrawBuffers);
+
+	// Attach textures to framebuffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gbufferTextures[0], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gbufferTextures[1], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gbufferTextures[2], 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		fprintf(stderr, "Error on building framebuffer\n");
+		exit(EXIT_FAILURE);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     do
     {
@@ -431,6 +530,11 @@ int main( int argc, char **argv )
         // Clear the front buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Bind gbuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, gbufferFbo);
+		// Clear the gbuffer
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         // Get camera matrices
         glm::mat4 projection = glm::perspective(45.0f, widthf / heightf, 0.1f, 100.f); 
         glm::mat4 worldToView = glm::lookAt(camera.eye, camera.o, camera.up);
@@ -438,15 +542,48 @@ int main( int argc, char **argv )
         glm::mat4 mv = worldToView * objectToWorld;
         glm::mat4 mvp = projection * mv;
         glm::vec4 light = worldToView * glm::vec4(10.0, 10.0, 0.0, 1.0);
+		glm::mat4 inverseProjection = glm::inverse(projection);
 
         // Select textures
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[0]);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textures[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
+
+		// Select shader
+		glUseProgram(gbufferProgramObject);
+		// Upload uniforms
+		glProgramUniformMatrix4fv(gbufferProgramObject, mvpGBLocation, 1, 0, glm::value_ptr(mvp));
+		glProgramUniformMatrix4fv(gbufferProgramObject, mvGBLocation, 1, 0, glm::value_ptr(mv));
+		glProgramUniform1i(gbufferProgramObject, instanceCountGBLocation, (int)2500);
+		glProgramUniform1f(gbufferProgramObject, specularPowerGBLocation, 30.f);
+		glProgramUniform1f(gbufferProgramObject, timeGBLocation, t);
+		glProgramUniform1i(gbufferProgramObject, diffuseGBLocation, 0);
+		glProgramUniform1i(gbufferProgramObject, specGBLocation, 1);
+		//glProgramUniformMatrix4fv(pointlightProgramObject, pointInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
+		glProgramUniformMatrix4fv(directionalLightProgramObject, directionalInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
+		//glProgramUniformMatrix4fv(spotlightProgramObject, spotInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
+
+		// Render vaos
+		glBindVertexArray(vao[0]);
+		glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)2500);
+		//glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		glProgramUniform1f(gbufferProgramObject, timeGBLocation, 0.f);
+		glBindVertexArray(vao[1]);
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+
+
 
         // Select shader
-        glUseProgram(programObject);
+       glUseProgram(programObject);
 
         // Upload uniforms
         glProgramUniformMatrix4fv(programObject, mvpLocation, 1, 0, glm::value_ptr(mvp));
@@ -457,18 +594,25 @@ int main( int argc, char **argv )
 
         // Render vaos
         glBindVertexArray(vao[0]);
-		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
+		glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
+
+		// Select shader
+		glUseProgram(gbufferProgramObject);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glActiveTexture(GL_TEXTURE0);
+
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
+				glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
@@ -482,6 +626,7 @@ int main( int argc, char **argv )
 			if (bird != NULL)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
+				glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
@@ -504,6 +649,31 @@ int main( int argc, char **argv )
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		/*
+		glm::vec3 rotation = glm::rotateZ(glm::vec3(5.0, 0.0, 0.0), 90.0f);
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(rotation));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(rotation));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);*/
+		
+		/*// Select textures
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gbufferTextures[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gbufferTextures[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, gbufferTextures[2]);
+
+		glUseProgram(directionalLightProgramObject);
+
+		glBindVertexArray(vao[2]);
+
+		glProgramUniform3fv(directionalLightProgramObject, directionalLightDirectionLightLocation, 1, glm::value_ptr(glm::vec3(light)));
+		glProgramUniform3fv(directionalLightProgramObject, directionalLightColorLightLocation, 1, glm::value_ptr(glm::vec3(1.0, 0.0, 0.0)));
+		glProgramUniform1f(directionalLightProgramObject, directionalLightIntensityLightLocation, 10);
+		glProgramUniformMatrix4fv(directionalLightProgramObject, directionalInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		*/
 
 #if 1
         // Draw UI
