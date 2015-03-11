@@ -10,7 +10,7 @@ class GroundForce : public Force
 public:
 	glm::vec3 m_Force;
 
-	GroundForce(float elasticity, const LeapfrogSolver& solver, float _y);
+	GroundForce(float elasticity, const LeapfrogSolver& solver, float _yz, bool floor, glm::vec3 _normal, bool sup);
 	~GroundForce();
 
 	void setDt(float dt);
@@ -21,6 +21,9 @@ public:
 	float m_fElasticity;
 	const LeapfrogSolver* m_Solver;
 	float m_fDt;
-	float groundY;
+	float groundYZ;
+	bool ground;
+	glm::vec3 normal;
+	bool superior;
 };
 

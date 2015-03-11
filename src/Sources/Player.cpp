@@ -3,10 +3,6 @@
 
 Player::Player(float width) : MovableObject(glm::vec3(0), 1), hasBomb(false), isDead(false), width(width), BombPicked(NULL)
 {
-	speed = 0.25f;
-	speedMax = 0.75f;
-	speedMin = 0.1f;
-
 	jumping = false;
 }
 
@@ -41,11 +37,6 @@ void Player::KillPlayer()
 	isDead = true;
 }
 
-float Player::GetSpeed()
-{
-	return speed;
-}
-
 void Player::MoveLeft()
 {
 	if (-(width / 2) < m_Position.x)
@@ -62,16 +53,6 @@ void Player::MoveRight()
 	}
 }
 
-void Player::SpeedUp()
-{
-	speed = glm::min(speed + speedMax / 25.f, speedMax);
-}
-
-void Player::SlowDown()
-{
-	speed = glm::max(speed - speedMax / 3.f, speedMin);
-}
-
 bool Player::IsDead()
 {
 	return isDead;
@@ -80,11 +61,6 @@ bool Player::IsDead()
 bool Player::HasBomb()
 {
 	return BombPicked != NULL;
-}
-
-float Player::GetMaxSpeed()
-{
-	return speedMax;
 }
 
 void Player::Jump(float _time)

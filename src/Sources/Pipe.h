@@ -8,7 +8,6 @@ class Pipe : public MovableObject
 public:
 	Pipe(glm::vec3 pos, float endZ);
 	~Pipe();
-	void Move(float speed);
 
 	bool isOutOfMap();
 	bool CheckHitObject(MovableObject *_object);

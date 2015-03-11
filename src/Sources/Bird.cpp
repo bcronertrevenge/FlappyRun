@@ -21,22 +21,6 @@ void Bird::Move(const std::vector<Bird*>& birds)
 	float oldPosX = m_Position.x;
 	float oldPosZ = m_Position.z;
 
-	// Z
-	if (m_Position.z > player->GetPosition().z || m_Position.z < distanceMax)
-	{
-		m_Position.z += (player->GetSpeed() - player->GetMaxSpeed() / 2) * speedIncrement;
-	}
-	
-	for (Bird *bird : birds)
-	{
-		if (bird != this && CheckHitObject(bird))
-		{
-			m_Position.z = oldPosZ;
-			break;
-		}
-	}
-
-	// X
 	if (m_Position.x < player->GetPosition().x)
 	{
 		m_Position.x += speedIncrement;
@@ -51,17 +35,17 @@ void Bird::Move(const std::vector<Bird*>& birds)
 		m_Position.x = player->GetPosition().x;
 	}
 
-	for (Bird *bird : birds)
+	/*for (Bird *bird : birds)
 	{
 		if (bird != this && CheckHitObject(bird))
 		{
 			m_Position.x = oldPosX;
 			break;
 		}
-	}
+	}*/
 }
 
-void Bird::StepBack(float _step, const std::vector<Bird*>& birds)
+/*void Bird::StepBack(float _step, const std::vector<Bird*>& birds)
 {
 	m_Position.z = glm::min(m_Position.z + _step, player->GetPosition().z + distanceMax);
 	
@@ -97,7 +81,7 @@ void Bird::StepBack(float _step, const std::vector<Bird*>& birds)
 			break;
 		}
 	}
-}
+}*/
 
 void Bird::SetPosZ(float z)
 {

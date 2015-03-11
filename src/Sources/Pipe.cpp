@@ -14,11 +14,6 @@ Pipe::~Pipe()
 {
 }
 
-void Pipe::Move(float speed)
-{
-	m_Position.z += speed;
-}
-
 bool Pipe::CheckHitObject(MovableObject *_object)
 {
 	if (MovableObject::CheckHitObject(_object))
