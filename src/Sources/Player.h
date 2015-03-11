@@ -15,7 +15,6 @@ public:
 
 	void applyForce(glm::vec3 _pos);
 	float GetSpeed();
-	void Move();
 	void MoveLeft();
 	void MoveRight();
 	void SpeedUp();
@@ -26,6 +25,7 @@ public:
 	float GetMaxSpeed();
 	void Jump(float _time);
 	bool IsJumping();
+	void SetJumping(bool _jump);
 
 private:
 	bool hasBomb;
@@ -36,10 +36,7 @@ private:
 	float speedMax;
 	float speedMin;
 
-	float heightMax;
-	bool ascending;
-	bool jumping;
-	float speedJump;
 	float LastTimeJump;
+	bool jumping;
 };
 

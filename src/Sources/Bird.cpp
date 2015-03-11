@@ -113,12 +113,7 @@ void Bird::applyForce(glm::vec3 _pos)
 
 bool Bird::HasToFlap(float dt)
 {
-	if (player->GetPosition().y > m_Position.y && (dt - LastFlap > 0.5f))
-	{
-		LastFlap = dt;
-		return true;
-	}
-	else if (dt - LastFlap > 1.f)
+	if ((player->GetPosition().y > m_Position.y && (dt - LastFlap > 0.25f)) || (dt - LastFlap > 0.5f))
 	{
 		LastFlap = dt;
 		return true;

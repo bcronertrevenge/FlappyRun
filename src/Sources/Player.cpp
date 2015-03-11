@@ -7,10 +7,7 @@ Player::Player(float width) : MovableObject(glm::vec3(0), 1), hasBomb(false), is
 	speedMax = 0.75f;
 	speedMin = 0.1f;
 
-	heightMax = 1.f;
-	ascending = true;
 	jumping = false;
-	speedJump = 0.2f;
 }
 
 
@@ -65,22 +62,14 @@ void Player::MoveRight()
 	}
 }
 
-void Player::Move()
-{
-	if (jumping && m_Position.y >= heightMax)
-	{
-		jumping = false;
-	}
-}
-
 void Player::SpeedUp()
 {
-	speed = glm::min(speed + speedMax / 20.f, speedMax);
+	speed = glm::min(speed + speedMax / 25.f, speedMax);
 }
 
 void Player::SlowDown()
 {
-	speed = glm::max(speed - speedMax / 5.f, speedMin);
+	speed = glm::max(speed - speedMax / 3.f, speedMin);
 }
 
 bool Player::IsDead()
@@ -100,7 +89,7 @@ float Player::GetMaxSpeed()
 
 void Player::Jump(float _time)
 {
-	if (jumping || _time - LastTimeJump < 1.f) // A changer pour sauter moins souvent
+	if (jumping || m_Position.y >= 1.f || _time - LastTimeJump < 3.f) // A changer pour sauter moins souvent
 		return;
 
 	jumping = true;
@@ -117,4 +106,9 @@ void Player::applyForce(glm::vec3 _pos)
 bool Player::IsJumping()
 {
 	return jumping;
+}
+
+void Player::SetJumping(bool _jump)
+{
+	jumping = _jump;
 }

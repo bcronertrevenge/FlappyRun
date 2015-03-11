@@ -100,7 +100,8 @@ int main( int argc, char **argv )
 {
     int width = 1024, height= 768;
     float widthf = (float) width, heightf = (float) height;
-    double t;
+    float t = 0;
+	float dt = 0;
     float fps = 0.f;
 
     // Initialise GLFW
@@ -336,9 +337,9 @@ int main( int argc, char **argv )
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
 
-	ConstantForce gravity(glm::vec3(0.f, -0.0001f, 0.f));
-	ConstantForce JumpForce(glm::vec3(0.f, 0.0002f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 0.004f, 0.f));
+	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 400.f, 0.f));
 
 	LeapfrogSolver leapfrog;
 
@@ -358,11 +359,10 @@ int main( int argc, char **argv )
 	int numberPipesBeforeBomb = 6;
 	float pipescrossed = 0;
 	float combo = 0;
-	float StartTime = glfwGetTime();
 
     do
     {
-		t = (glfwGetTime() - StartTime);
+		t = glfwGetTime();
 		
         // Mouse states
         int leftButton = glfwGetMouseButton( window, GLFW_MOUSE_BUTTON_LEFT );
@@ -574,16 +574,8 @@ int main( int argc, char **argv )
 		imguiSlider("PosY", &y, -200, 200, 1);
 		imguiSlider("PosZ", &z, -200, 200, 1);
 
-		x = player.GetForce().x;
-		y = player.GetForce().y;
-		z = player.GetForce().z;
-
-		imguiSlider("VelX", &x, -200, 200, 1);
-		imguiSlider("VelY", &y, -200, 200, 1);
-		imguiSlider("VelZ", &z, -200, 200, 1);
-
-		float dt = t;
-		imguiSlider("dt", &dt, 0, 200, 1);
+		imguiSlider("t", &t, 0, 200, 1);
+		imguiSlider("dt", &dt, 0, 10, 0.01);
 
         imguiEndScrollArea();
         imguiEndFrame();
@@ -595,19 +587,18 @@ int main( int argc, char **argv )
 		//Force
 		if (player.IsDead() == false)
 		{
-			groundForce.setDt(t);
-
 			gravity.apply(objects);
 			groundForce.apply(objects);
 
 			if (player.IsJumping())
 			{
 				JumpForce.apply(&player);
+				player.SetJumping(false);
 			}
 			
-			leapfrog.solve(objects, t);
+			leapfrog.solve(objects, dt);
 
-			player.Move();
+			//player.Move();
 		}		
 
 		//Movement Pipes
@@ -667,7 +658,7 @@ int main( int argc, char **argv )
 		{
 			if (bird != NULL && player.IsDead() == false)
 			{
-				//bird->Move(birds);
+				bird->Move(birds);
 				if (bird->HasToFlap(t))
 				{
 					FlapForce.apply(bird);
@@ -708,6 +699,8 @@ int main( int argc, char **argv )
 
 		float newTime = glfwGetTime();		
 		fps = 1.f / (newTime - t);
+		dt = newTime - t;
+		groundForce.setDt(dt);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );
 
