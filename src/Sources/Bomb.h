@@ -14,7 +14,7 @@ public:
 	void Move(float speed);
 	void SetPosition(glm::vec3 pos);
 
-	void ExplodeBird(Bird* bird, const std::vector<Bird*>& birds);
+	void ExplodeBird(Bird* bird);
 	bool IsActive();
 	void SetActive(bool _active);
 	bool isOutOfMap();

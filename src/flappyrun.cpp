@@ -332,7 +332,9 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	Player player(10.f);
+	float widthCorridor = 10.f;
+
+	Player player(widthCorridor);
 
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
@@ -344,8 +346,8 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
 
 	std::vector<Bird*> birds;
-	birds.push_back(new Bird(&player, -20.f));
-	birds.push_back(new Bird(&player, 20.f));
+	birds.push_back(new Bird(&player, -3.f));
+	birds.push_back(new Bird(&player, 2.5f));
 	birds.push_back(new Bird(&player, 0.f));
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
@@ -370,21 +372,18 @@ int main( int argc, char **argv )
 	glEnable(GL_BLEND);
 	// Setup additive blending
 	glBlendFunc(GL_ONE, GL_ONE);
-
-	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
-	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 400.f, 0.f));
-
-	LeapfrogSolver leapfrog;
-
-	GroundForce groundForce(1.f, leapfrog, -1.f);
-
+	
 	std::vector<MovableObject*> objects;
-	objects.push_back(&player);
+	objects.push_back(&bomb);
 
 	for (Bird *bird : birds)
 	{
 		objects.push_back(bird);
+	}
+
+	for (Pipe *pipe : pipes)
+	{
+		objects.push_back(pipe);
 	}
 
     // Viewport 
@@ -395,6 +394,25 @@ int main( int argc, char **argv )
 	float pipescrossed = 0;
 	float combo = 0;
 
+	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 200.f, 0.f));
+	ConstantForce SpeedUpForce(glm::vec3(0.f, 0.f, 1.f));
+	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -200.f));
+	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.005f));
+	ConstantForce PipeHitForce(glm::vec3(0.f, 0.f, 200.f));
+	ConstantForce BombHitForce(glm::vec3(0.f, 0.f, 600.f));
+
+	LeapfrogSolver leapfrog;
+
+	GroundForce groundForce(1.f, leapfrog, -1.f, WallType::Ground, glm::vec3(0.f, 1.f, 0.f), false);
+	GroundForce backWallForce(1.f, leapfrog, 10.f, WallType::WallZ, glm::vec3(0.f, 0.f, -1.f), true);
+	GroundForce frontWallForce(1.f, leapfrog, 0.f, WallType::WallZ, glm::vec3(0.f, 0.f, 1.f), false);
+	GroundForce leftWallForce(1.f, leapfrog, -widthCorridor/2, WallType::WallX, glm::vec3(1.f, 0.f, 0.f), false);
+	GroundForce rightWallForce(1.f, leapfrog, widthCorridor/2, WallType::WallX, glm::vec3(-1.f, 0.f, 0.f), true);
+
+	float speed = 0.f;
+	float LastTimePassed = 0.f;
     do
     {
 		t = glfwGetTime();
@@ -617,17 +635,17 @@ int main( int argc, char **argv )
         imguiBeginScrollArea("aogl", width - 210, height - 310, 200, 300, &logScroll);
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
-		float speed = player.GetSpeed();
-		imguiSlider("Speed", &speed, 0.1f, 1.f, 0.01f);
+		
+		imguiSlider("Speed", &speed, 0, 10, 0.01);
 		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
 
 		float hasbomb = player.HasBomb();
 		imguiSlider("Bomb", &hasbomb, 0, 1, 1);
 
 		float x, y, z;
-		x = player.GetPosition().x;
-		y = player.GetPosition().y;
-		z = player.GetPosition().z;
+		x = birds[0]->GetPosition().x;
+		y = birds[0]->GetPosition().y;
+		z = birds[0]->GetPosition().z;
 
 		imguiSlider("PosX", &x, -200, 200, 1);
 		imguiSlider("PosY", &y, -200, 200, 1);
@@ -643,50 +661,33 @@ int main( int argc, char **argv )
         glDisable(GL_BLEND);
 #endif
 
-		//Force
-		if (player.IsDead() == false)
-		{
-			gravity.apply(objects);
-			groundForce.apply(objects);
-
-			if (player.IsJumping())
-			{
-				JumpForce.apply(&player);
-				player.SetJumping(false);
-			}
-			
-			leapfrog.solve(objects, dt);
-
-			//player.Move();
-		}		
-
 		//Movement Pipes
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && player.IsDead() == false)
 			{
-				pipe->Move(player.GetSpeed());
 
 				if (pipe->HasPassedPlayer(&player))
 				{
 					++pipescrossed;
 					++combo;
 
-					if ((int)combo % numberPipesBeforeSpeedUp == 0)
-					{
-						player.SpeedUp();
-					}
 					if ((int)combo % numberPipesBeforeBomb == 0 && bomb.IsPicked() == false && bomb.IsActive() == false)
 					{
 						bomb.SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
 						bomb.SetActive(true);
 					}
-						
 				}
 
 				if (pipe->isOutOfMap())
 				{
 					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+
+					if (pipe == pipes[0])
+					{
+						speed = 1.f / (glfwGetTime() - LastTimePassed);
+						LastTimePassed = glfwGetTime();
+					}					
 				}
 
 				//If pipe didn't hit anything yet, we check the collision
@@ -694,7 +695,7 @@ int main( int argc, char **argv )
 				{
 					if (pipe->CheckHitObject(&player))
 					{
-						player.SlowDown();
+						SpeedDownForce.apply(objects);
 						combo = 0;
 					}
 
@@ -704,7 +705,7 @@ int main( int argc, char **argv )
 						{
 							if (pipe->CheckHitObject(bird))
 							{
-								bird->StepBack(1.f, birds);
+								PipeHitForce.apply(bird);
 							}
 						}
 					}
@@ -717,7 +718,13 @@ int main( int argc, char **argv )
 		{
 			if (bird != NULL && player.IsDead() == false)
 			{
-				bird->Move(birds);
+				bird->Move(birds, dt);
+				backWallForce.apply(bird);
+				frontWallForce.apply(bird);
+				leftWallForce.apply(bird);
+				rightWallForce.apply(bird);
+				MovementBird.apply(bird);
+
 				if (bird->HasToFlap(t))
 				{
 					FlapForce.apply(bird);
@@ -726,9 +733,10 @@ int main( int argc, char **argv )
 				{
 					player.KillPlayer();
 				}
-				else if (bomb.CheckHitObject(bird))
+				else if (bomb.IsReadyToExplode() && bomb.CheckHitObject(bird))
 				{
-					bomb.ExplodeBird(bird, birds);
+					BombHitForce.apply(bird);
+					bomb.ExplodeBird(bird);
 				}
 			}
 		}
@@ -736,8 +744,6 @@ int main( int argc, char **argv )
 		//Movement Bomb
 		if (bomb.IsActive() && player.IsDead() == false)
 		{
-			bomb.Move(player.GetSpeed());
-
 			if (bomb.CheckHitObject(&player))
 			{
 				player.PickBomb(&bomb);
@@ -749,6 +755,29 @@ int main( int argc, char **argv )
 			}
 		}		
 
+
+		//Force
+		if (player.IsDead() == false)
+		{
+			// Objects
+			gravity.apply(objects);
+			groundForce.apply(objects);
+			SpeedUpForce.apply(objects);
+
+			leapfrog.solve(objects, dt);
+
+			// Player
+			gravity.apply(&player);
+			groundForce.apply(&player);
+
+			if (player.IsJumping())
+			{
+				JumpForce.apply(&player);
+				player.SetJumping(false);
+			}
+
+			leapfrog.solve(&player, dt);
+		}
 		
         // Check for errors
         checkError("End loop");
@@ -760,6 +789,10 @@ int main( int argc, char **argv )
 		fps = 1.f / (newTime - t);
 		dt = newTime - t;
 		groundForce.setDt(dt);
+		backWallForce.setDt(dt);
+		frontWallForce.setDt(dt);
+		rightWallForce.setDt(dt);
+		leftWallForce.setDt(dt);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );
 

@@ -10,9 +10,8 @@ public:
 	Bird(Player* _player, float posX);
 	~Bird();
 
-	void StepBack(float _step, const std::vector<Bird*>& birds);
 	void applyForce(glm::vec3 _pos);
-	void Move(const std::vector<Bird*>& birds);
+	void Move(const std::vector<Bird*>& birds, float dt);
 	void SetPosZ(float z);
 	bool HasToFlap(float dt);
 

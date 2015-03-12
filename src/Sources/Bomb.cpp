@@ -12,13 +12,12 @@ Bomb::~Bomb()
 {
 }
 
-void Bomb::ExplodeBird(Bird* bird, const std::vector<Bird*>& birds)
+void Bomb::ExplodeBird(Bird* bird)
 {
 	active = false;
 	m_Position.x = rand() % 15 - 10.f;
 	m_Position.z = -80.f;
 	readyToExplode = false;
-	bird->StepBack(4.f, birds);
 }
 
 void Bomb::Move(float speed)

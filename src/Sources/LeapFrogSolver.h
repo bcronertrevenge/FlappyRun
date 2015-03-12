@@ -14,6 +14,7 @@ public:
 	LeapfrogSolver();
 	~LeapfrogSolver();
 	void solve(const std::vector<MovableObject*>& objects, float dt);
+	void solve(MovableObject* obj, float dt);
 	ObjectState getNextState(MovableObject* obj, float dt) const;
 };
 

@@ -14,5 +14,8 @@ public:
 	virtual void apply(const std::vector<MovableObject*>& objects);
 	virtual void apply(MovableObject* object);
 
+	void SetForce(glm::vec3 _force);
+	glm::vec3 GetForce();
+
 };
 
