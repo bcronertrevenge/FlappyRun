@@ -1,13 +1,13 @@
 #include "Sources/Player.h"
 #include <iostream>
 
-Player::Player(float width) : hasBomb(false), isDead(false), width(width), BombPicked(NULL)
+Player::Player(float width) : MovableObject(glm::vec3(0), 1), hasBomb(false), isDead(false), width(width), BombPicked(NULL)
 {
-	Position = glm::vec3(0);
-	sizePlayer = 1;
 	speed = 0.25f;
 	speedMax = 0.75f;
 	speedMin = 0.1f;
+
+	jumping = false;
 }
 
 
@@ -28,29 +28,17 @@ void Player::DropBomb()
 {
 	if (BombPicked != NULL)
 	{
-		BombPicked->SetPosition(glm::vec3(Position.x, Position.y, Position.z + 1.f));
+		BombPicked->SetPosition(glm::vec3(m_Position.x, m_Position.y, m_Position.z + 1.f));
 		BombPicked->SetActive(true);
 		BombPicked->SetPicked(false);
 		BombPicked->SetReadyToExplode(true);
 		BombPicked = NULL;
-
-		std::cout << "Bomb Dropped" << std::endl;
 	}
 }
 
 void Player::KillPlayer()
 {
 	isDead = true;
-}
-
-glm::vec3 Player::GetPosition()
-{
-	return Position;
-}
-
-float Player::GetSize()
-{
-	return sizePlayer;
 }
 
 float Player::GetSpeed()
@@ -60,28 +48,28 @@ float Player::GetSpeed()
 
 void Player::MoveLeft()
 {
-	if (-(width/2) < Position.x)
+	if (-(width / 2) < m_Position.x)
 	{
-		Position.x -= 0.1f;
+		m_Position.x -= 0.1f;
 	}	
 }
 
 void Player::MoveRight()
 {
-	if (width / 2 > Position.x)
+	if (width / 2 > m_Position.x)
 	{
-		Position.x += 0.1f;
+		m_Position.x += 0.1f;
 	}
 }
 
 void Player::SpeedUp()
 {
-	speed = glm::min(speed + speedMax / 20.f, speedMax);
+	speed = glm::min(speed + speedMax / 25.f, speedMax);
 }
 
 void Player::SlowDown()
 {
-	speed = glm::max(speed - speedMax / 5.f, speedMin);
+	speed = glm::max(speed - speedMax / 3.f, speedMin);
 }
 
 bool Player::IsDead()
@@ -97,4 +85,30 @@ bool Player::HasBomb()
 float Player::GetMaxSpeed()
 {
 	return speedMax;
+}
+
+void Player::Jump(float _time)
+{
+	if (jumping || m_Position.y >= 1.f || _time - LastTimeJump < 3.f) // A changer pour sauter moins souvent
+		return;
+
+	jumping = true;
+	LastTimeJump = _time;
+}
+
+void Player::applyForce(glm::vec3 _pos)
+{
+	m_Position += _pos;
+
+	if (m_Position.y < 0.f) m_Position.y = 0.f;
+}
+
+bool Player::IsJumping()
+{
+	return jumping;
+}
+
+void Player::SetJumping(bool _jump)
+{
+	jumping = _jump;
 }

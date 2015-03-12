@@ -13,6 +13,14 @@ uniform sampler2D Specular;
 uniform vec3 Light;
 uniform float SpecularPower;
 
+uniform vec3 PointLightPositions;
+uniform vec3 PointLightColor;
+uniform float PointLightIntensity;
+
+uniform vec3 DirectionalLightDirection;
+uniform vec3 DirectionalLightColor;
+uniform float DirectionalLightIntensity;
+
 layout(location = FRAG_COLOR, index = 0) out vec4 FragColor;
 
 in block
@@ -21,6 +29,35 @@ in block
 	vec3 CameraSpacePosition;
 	vec3 CameraSpaceNormal;
 } In; 
+
+vec3 pointLights( in vec3 n, in vec3 v, in vec3 diffuseColor, in vec3 specularColor, in float specularPower)
+{
+	vec3 outColor = vec3(0);
+	for (int i = 0; i < 1; ++i) {
+		vec3 l = normalize(PointLightPositions - In.CameraSpacePosition);
+		float ndotl = max(dot(n, l), 0.0);
+		vec3 h = normalize(l+v);
+		float ndoth = max(dot(n, h), 0.0);
+		float d = distance(PointLightPositions, In.CameraSpacePosition);
+		float att = 1.f / (d*d);
+		outColor += att * PointLightColor * PointLightIntensity * (diffuseColor * ndotl + specularColor * pow(ndoth, SpecularPower));
+	}
+	return outColor;
+}
+
+vec3 directionalLights( in vec3 n, in vec3 v, in vec3 diffuseColor, in vec3 specularColor, in float specularPower)
+{
+	vec3 outColor = vec3(0);
+	for (int i = 0; i < 1; ++i) {
+		vec3 l = normalize(-DirectionalLightDirection);
+		float ndotl = max(dot(n, l), 0.0);
+		vec3 h = normalize(l+v);
+		float ndoth = max(dot(n, h), 0.0);
+		outColor += DirectionalLightColor * DirectionalLightIntensity * (diffuseColor * ndotl + specularColor * pow(ndoth, SpecularPower));
+	}
+	return outColor;
+}
+
 
 void main()
 {
@@ -53,11 +90,14 @@ void main()
 #endif
 #if defined(EX4)
 	vec3 n = normalize(In.CameraSpaceNormal);
+	vec3 v = normalize(-In.CameraSpacePosition);
 	vec3 l = normalize(Light - In.CameraSpacePosition);
 	float ndotl =  max(dot(n, l), 0.0);
 	vec3 h = normalize(l-normalize(In.CameraSpacePosition));
 	float ndoth = max(dot(n, h), 0.0);
-	vec3 color = texture(Diffuse, In.Texcoord).rgb * ndotl + texture(Specular, In.Texcoord).rrr * pow(ndoth, SpecularPower);
+	//vec3 color = texture(Diffuse, In.Texcoord).rgb * ndotl + texture(Specular, In.Texcoord).rrr * pow(ndoth, SpecularPower);
+	vec3 color = pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) 
+				+ directionalLights(n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower);
 	FragColor = vec4(color, 1.0);
 	// FragColor = vec4(vec3(ndotl), 1.0);
 	// FragColor = vec4(vec3(n), 1.0);

@@ -2,8 +2,9 @@
 
 #include <glm/glm.hpp>
 #include "Sources/Bomb.h"
+#include "Sources/MovableObject.h"
 
-class Player
+class Player : public MovableObject
 {
 public:
 	Player(float width);
@@ -12,8 +13,7 @@ public:
 	void DropBomb();
 	void KillPlayer();
 
-	glm::vec3 GetPosition();
-	float GetSize();
+	void applyForce(glm::vec3 _pos);
 	float GetSpeed();
 	void MoveLeft();
 	void MoveRight();
@@ -23,10 +23,11 @@ public:
 	void PickBomb(Bomb* bomb);
 	bool HasBomb();
 	float GetMaxSpeed();
+	void Jump(float _time);
+	bool IsJumping();
+	void SetJumping(bool _jump);
 
 private:
-	glm::vec3 Position;
-	float sizePlayer;
 	bool hasBomb;
 	float speed;
 	bool isDead;
@@ -34,5 +35,8 @@ private:
 	Bomb * BombPicked;
 	float speedMax;
 	float speedMin;
+
+	float LastTimeJump;
+	bool jumping;
 };
 

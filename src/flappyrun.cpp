@@ -29,6 +29,9 @@
 #include "Sources/Pipe.h"
 #include "Sources/Bird.h"
 #include "Sources/Bomb.h"
+#include "Sources/ConstantForce.h"
+#include "Sources/LeapFrogSolver.h"
+#include "Sources/GroundForce.h"
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
@@ -98,7 +101,8 @@ int main( int argc, char **argv )
 {
     int width = 1024, height= 768;
     float widthf = (float) width, heightf = (float) height;
-    double t;
+    float t = 0;
+	float dt = 0;
     float fps = 0.f;
 
     // Initialise GLFW
@@ -226,25 +230,6 @@ int main( int argc, char **argv )
     if (check_link_error(programObject) < 0)
         exit(1);
 
-	// Try to load and compile gbuffer shaders
-	GLuint vertgbufferShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\gbuffer.vert");
-	GLuint fraggbufferShaderId = compile_shader_from_file(GL_FRAGMENT_SHADER, "src\\Shaders\\gbuffer.frag");
-	GLuint gbufferProgramObject = glCreateProgram();
-	glAttachShader(gbufferProgramObject, vertgbufferShaderId);
-	glAttachShader(gbufferProgramObject, fraggbufferShaderId);
-	glLinkProgram(gbufferProgramObject);
-	if (check_link_error(gbufferProgramObject) < 0)
-		exit(1);
-
-	// Try to load and compile directionalLight shaders
-	GLuint vertLightShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\light.vert");
-	GLuint fragDirectionalLightShaderId = compile_shader_from_file(GL_FRAGMENT_SHADER, "src\\Shaders\\directionalLight.frag");
-	GLuint directionalLightProgramObject = glCreateProgram();
-	glAttachShader(directionalLightProgramObject, vertLightShaderId);
-	glAttachShader(directionalLightProgramObject, fragDirectionalLightShaderId);
-	glLinkProgram(directionalLightProgramObject);
-	if (check_link_error(directionalLightProgramObject) < 0)
-		exit(1);
 
     // Upload uniforms
     GLuint mvpLocation = glGetUniformLocation(programObject, "MVP");
@@ -255,30 +240,19 @@ int main( int argc, char **argv )
     GLuint lightLocation = glGetUniformLocation(programObject, "Light");
 	GLuint TransLocation = glGetUniformLocation(programObject, "TranslationPlayer");
     GLuint specularPowerLocation = glGetUniformLocation(programObject, "SpecularPower");
+	GLuint directionalLightDirectionLocation = glGetUniformLocation(programObject, "DirectionalLightDirection");
+	GLuint directionalLightColorLocation = glGetUniformLocation(programObject, "DirectionalLightColor");
+	GLuint directionalLightIntensityLocation = glGetUniformLocation(programObject, "DirectionalLightIntensity");
+	GLuint pointLightPositionsLocation = glGetUniformLocation(programObject, "PointLightPositions");
+	GLuint pointLightColorLocation = glGetUniformLocation(programObject, "PointLightColor");
+	GLuint pointLightIntensityLocation = glGetUniformLocation(programObject, "PointLightIntensity");
+	GLuint rotationLocation = glGetUniformLocation(programObject, "Rotation");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
-
-	GLuint mvpGBLocation = glGetUniformLocation(gbufferProgramObject, "MVP");
-	GLuint mvGBLocation = glGetUniformLocation(gbufferProgramObject, "MV");
-	GLuint timeGBLocation = glGetUniformLocation(gbufferProgramObject, "Time");
-	GLuint diffuseGBLocation = glGetUniformLocation(gbufferProgramObject, "Diffuse");
-	GLuint specGBLocation = glGetUniformLocation(gbufferProgramObject, "Specular");
-	GLuint lightGBLocation = glGetUniformLocation(gbufferProgramObject, "Light");
-	GLuint specularPowerGBLocation = glGetUniformLocation(gbufferProgramObject, "SpecularPower");
-	GLuint instanceCountGBLocation = glGetUniformLocation(gbufferProgramObject, "InstanceCount");
-	glProgramUniform1i(gbufferProgramObject, diffuseGBLocation, 0);
-	glProgramUniform1i(gbufferProgramObject, specGBLocation, 1);
-
-	GLuint directionalLightColorLocation = glGetUniformLocation(directionalLightProgramObject, "ColorBuffer");
-	GLuint directionalLightNormalLocation = glGetUniformLocation(directionalLightProgramObject, "NormalBuffer");
-	GLuint directionalLightDepthLocation = glGetUniformLocation(directionalLightProgramObject, "DepthBuffer");
-	GLuint directionalLightColorLightLocation = glGetUniformLocation(directionalLightProgramObject, "ColorLight");
-	GLuint directionalLightDirectionLightLocation = glGetUniformLocation(directionalLightProgramObject, "DirectionLight");
-	GLuint directionalLightIntensityLightLocation = glGetUniformLocation(directionalLightProgramObject, "IntensityLight");
-	GLuint directionalInverseProjectionLocation = glGetUniformLocation(directionalLightProgramObject, "InverseProjection");
-	glProgramUniform1i(directionalLightProgramObject, directionalLightColorLocation, 0);
-	glProgramUniform1i(directionalLightProgramObject, directionalLightNormalLocation, 1);
-	glProgramUniform1i(directionalLightProgramObject, directionalLightDepthLocation, 2);
+	glProgramUniform3fv(programObject, directionalLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0,1.0, 1.0)));
+	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.6);
+	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 5.0, 5.0)));
+	glProgramUniform1f(programObject, pointLightIntensityLocation, 1.0);
 
     if (!checkError("Uniforms"))
         exit(1);
@@ -359,6 +333,7 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Player player(10.f);
+
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
@@ -369,9 +344,25 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
 
 	std::vector<Bird*> birds;
-	birds.push_back(new Bird(&player));
+	birds.push_back(new Bird(&player, -20.f));
+	birds.push_back(new Bird(&player, 20.f));
+	birds.push_back(new Bird(&player, 0.f));
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
+
+	glm::vec3 pointLightsPositions[8] = {
+		glm::vec3(100.f, 100.f, 100.f),
+		glm::vec3(-5.f, 5.0, -80.f),
+		glm::vec3(5.f, 5.0, -120.f),
+		glm::vec3(-5.f, 5.0, -120.f),
+		glm::vec3(5.f, 5.0, -160.f),
+		glm::vec3(-5.f, 5.0, -160.f),
+		glm::vec3(5.f, 5.0, -200.f),
+		glm::vec3(-5.f, 5.0, -200.f)
+	};
+
+	float angle = 3.14f / 2;
+	glm::mat4 rotation = glm::mat4(glm::vec4(cos(angle), sin(angle), 0, 0), glm::vec4(-sin(angle), cos(angle), 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1));
 
 	// Disable the depth test
 	glDisable(GL_DEPTH_TEST);
@@ -379,6 +370,22 @@ int main( int argc, char **argv )
 	glEnable(GL_BLEND);
 	// Setup additive blending
 	glBlendFunc(GL_ONE, GL_ONE);
+
+	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 400.f, 0.f));
+
+	LeapfrogSolver leapfrog;
+
+	GroundForce groundForce(1.f, leapfrog, -1.f);
+
+	std::vector<MovableObject*> objects;
+	objects.push_back(&player);
+
+	for (Bird *bird : birds)
+	{
+		objects.push_back(bird);
+	}
 
     // Viewport 
     glViewport( 0, 0, width, height  );
@@ -388,59 +395,10 @@ int main( int argc, char **argv )
 	float pipescrossed = 0;
 	float combo = 0;
 
-	// Init frame buffers
-	GLuint gbufferFbo;
-	GLuint gbufferTextures[3];
-	GLuint gbufferDrawBuffers[2];
-	glGenTextures(3, gbufferTextures);
-
-	// Create color texture
-	glBindTexture(GL_TEXTURE_2D, gbufferTextures[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	// Create normal texture
-	glBindTexture(GL_TEXTURE_2D, gbufferTextures[1]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	// Create depth texture
-	glBindTexture(GL_TEXTURE_2D, gbufferTextures[2]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	// Create Framebuffer Object
-	glGenFramebuffers(1, &gbufferFbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, gbufferFbo);
-	gbufferDrawBuffers[0] = GL_COLOR_ATTACHMENT0;
-	gbufferDrawBuffers[1] = GL_COLOR_ATTACHMENT1;
-	glDrawBuffers(2, gbufferDrawBuffers);
-
-	// Attach textures to framebuffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gbufferTextures[0], 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gbufferTextures[1], 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gbufferTextures[2], 0);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		fprintf(stderr, "Error on building framebuffer\n");
-		exit(EXIT_FAILURE);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     do
     {
-        t = glfwGetTime();
-
+		t = glfwGetTime();
+		
         // Mouse states
         int leftButton = glfwGetMouseButton( window, GLFW_MOUSE_BUTTON_LEFT );
         int rightButton = glfwGetMouseButton( window, GLFW_MOUSE_BUTTON_RIGHT );
@@ -520,6 +478,13 @@ int main( int argc, char **argv )
 			int spacePressed = glfwGetKey(window, GLFW_KEY_SPACE);
 			if (spacePressed == GLFW_PRESS)
 			{
+				player.Jump(t);
+			}
+
+			// Enter
+			int enterPressed = glfwGetKey(window, GLFW_KEY_ENTER);
+			if (enterPressed == GLFW_PRESS)
+			{
 				player.DropBomb();
 			}
 		}		
@@ -529,11 +494,6 @@ int main( int argc, char **argv )
 
         // Clear the front buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// Bind gbuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, gbufferFbo);
-		// Clear the gbuffer
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Get camera matrices
         glm::mat4 projection = glm::perspective(45.0f, widthf / heightf, 0.1f, 100.f); 
@@ -552,36 +512,6 @@ int main( int argc, char **argv )
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 
-		// Select shader
-		glUseProgram(gbufferProgramObject);
-		// Upload uniforms
-		glProgramUniformMatrix4fv(gbufferProgramObject, mvpGBLocation, 1, 0, glm::value_ptr(mvp));
-		glProgramUniformMatrix4fv(gbufferProgramObject, mvGBLocation, 1, 0, glm::value_ptr(mv));
-		glProgramUniform1i(gbufferProgramObject, instanceCountGBLocation, (int)2500);
-		glProgramUniform1f(gbufferProgramObject, specularPowerGBLocation, 30.f);
-		glProgramUniform1f(gbufferProgramObject, timeGBLocation, t);
-		glProgramUniform1i(gbufferProgramObject, diffuseGBLocation, 0);
-		glProgramUniform1i(gbufferProgramObject, specGBLocation, 1);
-		//glProgramUniformMatrix4fv(pointlightProgramObject, pointInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
-		glProgramUniformMatrix4fv(directionalLightProgramObject, directionalInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
-		//glProgramUniformMatrix4fv(spotlightProgramObject, spotInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
-
-		// Render vaos
-		glBindVertexArray(vao[0]);
-		glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, (int)2500);
-		//glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
-		glProgramUniform1f(gbufferProgramObject, timeGBLocation, 0.f);
-		glBindVertexArray(vao[1]);
-		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-
-
         // Select shader
        glUseProgram(programObject);
 
@@ -590,29 +520,33 @@ int main( int argc, char **argv )
         glProgramUniformMatrix4fv(programObject, mvLocation, 1, 0, glm::value_ptr(mv));
         glProgramUniform3fv(programObject, lightLocation, 1, glm::value_ptr(glm::vec3(light) / light.w));
         glProgramUniform1f(programObject, specularPowerLocation, 30.f);
+		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(glm::mat4(
+			cos(0), sin(0), 0, 0,
+			sin(0), cos(0), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+			)));
+		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+
+		glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(5.0f, 5.0f, -80.0f, 0.0))));
+
+		
         //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
         glBindVertexArray(vao[0]);
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
-		glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
-
-		// Select shader
-		glUseProgram(gbufferProgramObject);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
-		glActiveTexture(GL_TEXTURE0);
-
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
-				glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
@@ -626,7 +560,6 @@ int main( int argc, char **argv )
 			if (bird != NULL)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
-				glProgramUniform3fv(gbufferProgramObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
 				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
@@ -637,7 +570,7 @@ int main( int argc, char **argv )
 		glBindTexture(GL_TEXTURE_2D, textures[3]);
 		if (bomb.IsActive())
 		{
-			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y + 2.f, bomb.GetPosition().z)));
+			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y, bomb.GetPosition().z)));
 			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 		}
 
@@ -649,31 +582,16 @@ int main( int argc, char **argv )
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
-		/*
-		glm::vec3 rotation = glm::rotateZ(glm::vec3(5.0, 0.0, 0.0), 90.0f);
-		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(rotation));
+
+		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(rotation));
+
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f, 8.0, 0.0)));
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
-		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(rotation));
-		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);*/
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f,-5.0, 0.0)));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
 		
-		/*// Select textures
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gbufferTextures[0]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, gbufferTextures[1]);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, gbufferTextures[2]);
 
-		glUseProgram(directionalLightProgramObject);
-
-		glBindVertexArray(vao[2]);
-
-		glProgramUniform3fv(directionalLightProgramObject, directionalLightDirectionLightLocation, 1, glm::value_ptr(glm::vec3(light)));
-		glProgramUniform3fv(directionalLightProgramObject, directionalLightColorLightLocation, 1, glm::value_ptr(glm::vec3(1.0, 0.0, 0.0)));
-		glProgramUniform1f(directionalLightProgramObject, directionalLightIntensityLightLocation, 10);
-		glProgramUniformMatrix4fv(directionalLightProgramObject, directionalInverseProjectionLocation, 1, 0, glm::value_ptr(inverseProjection));
-		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
-		*/
+		
 
 #if 1
         // Draw UI
@@ -706,12 +624,41 @@ int main( int argc, char **argv )
 		float hasbomb = player.HasBomb();
 		imguiSlider("Bomb", &hasbomb, 0, 1, 1);
 
+		float x, y, z;
+		x = player.GetPosition().x;
+		y = player.GetPosition().y;
+		z = player.GetPosition().z;
+
+		imguiSlider("PosX", &x, -200, 200, 1);
+		imguiSlider("PosY", &y, -200, 200, 1);
+		imguiSlider("PosZ", &z, -200, 200, 1);
+
+		imguiSlider("t", &t, 0, 200, 1);
+		imguiSlider("dt", &dt, 0, 10, 0.01);
+
         imguiEndScrollArea();
         imguiEndFrame();
         imguiRenderGLDraw(width, height);
 
         glDisable(GL_BLEND);
 #endif
+
+		//Force
+		if (player.IsDead() == false)
+		{
+			gravity.apply(objects);
+			groundForce.apply(objects);
+
+			if (player.IsJumping())
+			{
+				JumpForce.apply(&player);
+				player.SetJumping(false);
+			}
+			
+			leapfrog.solve(objects, dt);
+
+			//player.Move();
+		}		
 
 		//Movement Pipes
 		for (Pipe * pipe : pipes)
@@ -742,10 +689,10 @@ int main( int argc, char **argv )
 					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
 				}
 
-				//If pipe didn't hit anything already, we check the collision
+				//If pipe didn't hit anything yet, we check the collision
 				if (pipe->hasHit() == false)
 				{
-					if (pipe->CheckHitPlayer(&player))
+					if (pipe->CheckHitObject(&player))
 					{
 						player.SlowDown();
 						combo = 0;
@@ -755,9 +702,9 @@ int main( int argc, char **argv )
 					{
 						if (bird != NULL)
 						{
-							if (pipe->CheckHitBird(bird))
+							if (pipe->CheckHitObject(bird))
 							{
-								bird->StepBack(1.f);
+								bird->StepBack(1.f, birds);
 							}
 						}
 					}
@@ -770,14 +717,18 @@ int main( int argc, char **argv )
 		{
 			if (bird != NULL && player.IsDead() == false)
 			{
-				bird->Move();
-				if (bird->CheckHitPlayer())
+				bird->Move(birds);
+				if (bird->HasToFlap(t))
+				{
+					FlapForce.apply(bird);
+				}
+				if (bird->CheckHitObject(&player))
 				{
 					player.KillPlayer();
 				}
-				else if (bomb.CheckHitBird(bird))
+				else if (bomb.CheckHitObject(bird))
 				{
-					bomb.ExplodeBird(bird);
+					bomb.ExplodeBird(bird, birds);
 				}
 			}
 		}
@@ -787,7 +738,7 @@ int main( int argc, char **argv )
 		{
 			bomb.Move(player.GetSpeed());
 
-			if (bomb.CheckHitPlayer(&player))
+			if (bomb.CheckHitObject(&player))
 			{
 				player.PickBomb(&bomb);
 			}
@@ -805,8 +756,10 @@ int main( int argc, char **argv )
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        double newTime = glfwGetTime();
-        fps = 1.f/ (newTime - t);
+		float newTime = glfwGetTime();		
+		fps = 1.f / (newTime - t);
+		dt = newTime - t;
+		groundForce.setDt(dt);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );
 
