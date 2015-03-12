@@ -319,7 +319,9 @@ int main( int argc, char **argv )
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	Player player(10.f);
+	float widthCorridor = 10.f;
+
+	Player player(widthCorridor);
 
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
@@ -331,8 +333,8 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
 
 	std::vector<Bird*> birds;
-	birds.push_back(new Bird(&player, -20.f));
-	birds.push_back(new Bird(&player, 20.f));
+	birds.push_back(new Bird(&player, -3.f));
+	birds.push_back(new Bird(&player, 2.5f));
 	birds.push_back(new Bird(&player, 0.f));
 
 	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
@@ -359,7 +361,7 @@ int main( int argc, char **argv )
 
 	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
 	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 400.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 200.f, 0.f));
 	ConstantForce SpeedUpForce(glm::vec3(0.f, 0.f, 1.f));
 	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -200.f));
 	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.005f));
@@ -368,9 +370,11 @@ int main( int argc, char **argv )
 
 	LeapfrogSolver leapfrog;
 
-	GroundForce groundForce(1.f, leapfrog, -1.f, true, glm::vec3(0.f, 1.f, 0.f), false);
-	GroundForce backWallForce(1.f, leapfrog, 10.f, false, glm::vec3(0.f, 0.f, -1.f), true);
-	GroundForce frontWallForce(1.f, leapfrog, 0.f, false, glm::vec3(0.f, 0.f, 1.f), false);
+	GroundForce groundForce(1.f, leapfrog, -1.f, WallType::Ground, glm::vec3(0.f, 1.f, 0.f), false);
+	GroundForce backWallForce(1.f, leapfrog, 10.f, WallType::WallZ, glm::vec3(0.f, 0.f, -1.f), true);
+	GroundForce frontWallForce(1.f, leapfrog, 0.f, WallType::WallZ, glm::vec3(0.f, 0.f, 1.f), false);
+	GroundForce leftWallForce(1.f, leapfrog, -widthCorridor/2, WallType::WallX, glm::vec3(1.f, 0.f, 0.f), false);
+	GroundForce rightWallForce(1.f, leapfrog, widthCorridor/2, WallType::WallX, glm::vec3(-1.f, 0.f, 0.f), true);
 
 	float speed = 0.f;
 	float LastTimePassed = 0.f;
@@ -658,6 +662,8 @@ int main( int argc, char **argv )
 				bird->Move(birds, dt);
 				backWallForce.apply(bird);
 				frontWallForce.apply(bird);
+				leftWallForce.apply(bird);
+				rightWallForce.apply(bird);
 				MovementBird.apply(bird);
 
 				if (bird->HasToFlap(t))
@@ -668,7 +674,7 @@ int main( int argc, char **argv )
 				{
 					player.KillPlayer();
 				}
-				else if (bomb.CheckHitObject(bird))
+				else if (bomb.IsReadyToExplode() && bomb.CheckHitObject(bird))
 				{
 					BombHitForce.apply(bird);
 					bomb.ExplodeBird(bird);
@@ -694,8 +700,6 @@ int main( int argc, char **argv )
 		//Force
 		if (player.IsDead() == false)
 		{
-			
-
 			// Objects
 			gravity.apply(objects);
 			groundForce.apply(objects);
@@ -728,6 +732,8 @@ int main( int argc, char **argv )
 		groundForce.setDt(dt);
 		backWallForce.setDt(dt);
 		frontWallForce.setDt(dt);
+		rightWallForce.setDt(dt);
+		leftWallForce.setDt(dt);
     } // Check if the ESC key was pressed
     while( glfwGetKey( window, GLFW_KEY_ESCAPE ) != GLFW_PRESS );
 

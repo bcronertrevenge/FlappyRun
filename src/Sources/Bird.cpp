@@ -46,7 +46,17 @@ void Bird::Move(const std::vector<Bird*>& birds, float dt)
 				glm::vec3 normal(1.f, 0.f, 0.f);
 				bird->AddForce(2.f * glm::dot(bird->GetVelocity(), -normal) * (bird->GetMass() / dt) * normal);
 			}
-						
+
+			if (m_Position.z > bird->GetPosition().z)
+			{
+				glm::vec3 normal(0.f, 0.f, 1.f);
+				bird->AddForce(2.f * glm::dot(bird->GetVelocity(), -normal) * (bird->GetMass() / dt) * normal);
+			}
+			else
+			{
+				glm::vec3 normal(0.f, 0.f, -1.f);
+				bird->AddForce(2.f * glm::dot(bird->GetVelocity(), -normal) * (bird->GetMass() / dt) * normal);
+			}
 			break;
 		}
 	}

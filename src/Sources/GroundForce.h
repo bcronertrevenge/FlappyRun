@@ -5,12 +5,14 @@
 
 class LeapfrogSolver;
 
+enum WallType { WallX, Ground, WallZ };
+
 class GroundForce : public Force
 {
 public:
 	glm::vec3 m_Force;
 
-	GroundForce(float elasticity, const LeapfrogSolver& solver, float _yz, bool floor, glm::vec3 _normal, bool sup);
+	GroundForce(float elasticity, const LeapfrogSolver& solver, float _yz, WallType _type, glm::vec3 _normal, bool sup);
 	~GroundForce();
 
 	void setDt(float dt);
@@ -21,9 +23,9 @@ public:
 	float m_fElasticity;
 	const LeapfrogSolver* m_Solver;
 	float m_fDt;
-	float groundYZ;
-	bool ground;
+	float groundXYZ;
 	glm::vec3 normal;
 	bool superior;
+	WallType wallType;
 };
 
