@@ -23,6 +23,7 @@
 #include "glm/mat4x4.hpp" // glm::mat4
 #include "glm/gtc/matrix_transform.hpp" // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include "glm/gtc/type_ptr.hpp" // glm::value_ptr
+#include "glm/gtx/rotate_vector.hpp""
 
 #include "Sources/Player.h"
 #include "Sources/Pipe.h"
@@ -228,7 +229,8 @@ int main( int argc, char **argv )
     glLinkProgram(programObject);
     if (check_link_error(programObject) < 0)
         exit(1);
-    
+
+
     // Upload uniforms
     GLuint mvpLocation = glGetUniformLocation(programObject, "MVP");
     GLuint mvLocation = glGetUniformLocation(programObject, "MV");
@@ -238,8 +240,19 @@ int main( int argc, char **argv )
     GLuint lightLocation = glGetUniformLocation(programObject, "Light");
 	GLuint TransLocation = glGetUniformLocation(programObject, "TranslationPlayer");
     GLuint specularPowerLocation = glGetUniformLocation(programObject, "SpecularPower");
+	GLuint directionalLightDirectionLocation = glGetUniformLocation(programObject, "DirectionalLightDirection");
+	GLuint directionalLightColorLocation = glGetUniformLocation(programObject, "DirectionalLightColor");
+	GLuint directionalLightIntensityLocation = glGetUniformLocation(programObject, "DirectionalLightIntensity");
+	GLuint pointLightPositionsLocation = glGetUniformLocation(programObject, "PointLightPositions");
+	GLuint pointLightColorLocation = glGetUniformLocation(programObject, "PointLightColor");
+	GLuint pointLightIntensityLocation = glGetUniformLocation(programObject, "PointLightIntensity");
+	GLuint rotationLocation = glGetUniformLocation(programObject, "Rotation");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
+	glProgramUniform3fv(programObject, directionalLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0,1.0, 1.0)));
+	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.6);
+	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 5.0, 5.0)));
+	glProgramUniform1f(programObject, pointLightIntensityLocation, 1.0);
 
     if (!checkError("Uniforms"))
         exit(1);
@@ -339,6 +352,27 @@ int main( int argc, char **argv )
 
 	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
 
+	glm::vec3 pointLightsPositions[8] = {
+		glm::vec3(100.f, 100.f, 100.f),
+		glm::vec3(-5.f, 5.0, -80.f),
+		glm::vec3(5.f, 5.0, -120.f),
+		glm::vec3(-5.f, 5.0, -120.f),
+		glm::vec3(5.f, 5.0, -160.f),
+		glm::vec3(-5.f, 5.0, -160.f),
+		glm::vec3(5.f, 5.0, -200.f),
+		glm::vec3(-5.f, 5.0, -200.f)
+	};
+
+	float angle = 3.14f / 2;
+	glm::mat4 rotation = glm::mat4(glm::vec4(cos(angle), sin(angle), 0, 0), glm::vec4(-sin(angle), cos(angle), 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1));
+
+	// Disable the depth test
+	glDisable(GL_DEPTH_TEST);
+	// Enable blending
+	glEnable(GL_BLEND);
+	// Setup additive blending
+	glBlendFunc(GL_ONE, GL_ONE);
+	
 	std::vector<MovableObject*> objects;
 	objects.push_back(&bomb);
 
@@ -346,6 +380,7 @@ int main( int argc, char **argv )
 	{
 		objects.push_back(bird);
 	}
+
 	for (Pipe *pipe : pipes)
 	{
 		objects.push_back(pipe);
@@ -485,26 +520,40 @@ int main( int argc, char **argv )
         glm::mat4 mv = worldToView * objectToWorld;
         glm::mat4 mvp = projection * mv;
         glm::vec4 light = worldToView * glm::vec4(10.0, 10.0, 0.0, 1.0);
+		glm::mat4 inverseProjection = glm::inverse(projection);
 
         // Select textures
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[0]);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textures[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
 
         // Select shader
-        glUseProgram(programObject);
+       glUseProgram(programObject);
 
         // Upload uniforms
         glProgramUniformMatrix4fv(programObject, mvpLocation, 1, 0, glm::value_ptr(mvp));
         glProgramUniformMatrix4fv(programObject, mvLocation, 1, 0, glm::value_ptr(mv));
         glProgramUniform3fv(programObject, lightLocation, 1, glm::value_ptr(glm::vec3(light) / light.w));
         glProgramUniform1f(programObject, specularPowerLocation, 30.f);
+		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(glm::mat4(
+			cos(0), sin(0), 0, 0,
+			sin(0), cos(0), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+			)));
+		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+
+		glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(5.0f, 5.0f, -80.0f, 0.0))));
+
+		
         //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
         glBindVertexArray(vao[0]);
-		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));		
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -551,6 +600,16 @@ int main( int argc, char **argv )
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+
+		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(rotation));
+
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f, 8.0, 0.0)));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f,-5.0, 0.0)));
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+		
+
+		
 
 #if 1
         // Draw UI

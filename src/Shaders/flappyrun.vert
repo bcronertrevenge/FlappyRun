@@ -17,6 +17,7 @@ const float TWOPI = 6.28318530718;
 const float PI_2 = 1.57079632679;
 const float SPHERE_RADIUS = 10.0;
 uniform vec3 TranslationPlayer;
+uniform mat4 Rotation;
 
 //layout(std140, column_major) uniform;
 
@@ -63,5 +64,5 @@ void main()
 	Out.CameraSpacePosition = p; 
 	Out.CameraSpaceNormal = n; 
 	Out.InstanceId = gl_InstanceID;
-	gl_Position = vec4(p + TranslationPlayer, 1.0);
+	gl_Position = vec4(p + TranslationPlayer, 1.0) * Rotation;
 }
