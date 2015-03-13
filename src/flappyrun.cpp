@@ -636,7 +636,6 @@ int main( int argc, char **argv )
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
 		
-		imguiSlider("Speed", &speed, 0, 10, 0.01);
 		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
 
 		float hasbomb = player.HasBomb();
