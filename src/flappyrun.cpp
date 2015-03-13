@@ -324,20 +324,20 @@ int main( int argc, char **argv )
 	Player player(widthCorridor);
 
 	std::vector<Pipe*> pipes;
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -120.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -160.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
-	pipes.push_back(new Pipe(glm::vec3(rand() % 15 - 10.f, 0.f, -200.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -40.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -40.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -120.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -160.f), 20.f));
+	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -160.f), 20.f));
 
 	std::vector<Bird*> birds;
 	birds.push_back(new Bird(&player, -3.f));
 	birds.push_back(new Bird(&player, 2.5f));
 	birds.push_back(new Bird(&player, 0.f));
 
-	Bomb bomb(glm::vec3(rand() % 15 - 10.f, 0.f, -80.f), 20.f);
+	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
 
 	std::vector<MovableObject*> objects;
 	objects.push_back(&bomb);
@@ -361,10 +361,10 @@ int main( int argc, char **argv )
 
 	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
 	ConstantForce JumpForce(glm::vec3(0.f, 700.f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 200.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 250.f, 0.f));
 	ConstantForce SpeedUpForce(glm::vec3(0.f, 0.f, 1.f));
-	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -200.f));
-	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.005f));
+	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -150.f));
+	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.01f));
 	ConstantForce PipeHitForce(glm::vec3(0.f, 0.f, 200.f));
 	ConstantForce BombHitForce(glm::vec3(0.f, 0.f, 600.f));
 
@@ -615,14 +615,14 @@ int main( int argc, char **argv )
 
 					if ((int)combo % numberPipesBeforeBomb == 0 && bomb.IsPicked() == false && bomb.IsActive() == false)
 					{
-						bomb.SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+						bomb.SetPosition(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f));
 						bomb.SetActive(true);
 					}
 				}
 
 				if (pipe->isOutOfMap())
 				{
-					pipe->SetPosition(glm::vec3((rand() % 20) - 10.f, 0.f, -80.f));
+					pipe->SetPosition(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f));
 
 					if (pipe == pipes[0])
 					{
@@ -665,6 +665,7 @@ int main( int argc, char **argv )
 				leftWallForce.apply(bird);
 				rightWallForce.apply(bird);
 				MovementBird.apply(bird);
+				gravity.apply(bird);
 
 				if (bird->HasToFlap(t))
 				{
@@ -701,7 +702,7 @@ int main( int argc, char **argv )
 		if (player.IsDead() == false)
 		{
 			// Objects
-			gravity.apply(objects);
+			
 			groundForce.apply(objects);
 			SpeedUpForce.apply(objects);
 

@@ -15,7 +15,7 @@ Bomb::~Bomb()
 void Bomb::ExplodeBird(Bird* bird)
 {
 	active = false;
-	m_Position.x = rand() % 15 - 10.f;
+	m_Position.x = rand() % 11 - 5.f;
 	m_Position.z = -80.f;
 	readyToExplode = false;
 }
