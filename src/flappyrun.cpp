@@ -354,9 +354,14 @@ int main( int argc, char **argv )
 	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
 
 	std::vector<PointLight*> pointLights;
-	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -10.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
-	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -10.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -40.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -40.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -60.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -60.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
 
+	float pointLigthsPositionInWorld[18];
 
 	float angle = 3.14f / 2;
 	glm::mat4 rotation = glm::mat4(glm::vec4(cos(angle), sin(angle), 0, 0), glm::vec4(-sin(angle), cos(angle), 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1));
@@ -413,6 +418,7 @@ int main( int argc, char **argv )
 
 	float speed = 0.f;
 	float LastTimePassed = 0.f;
+
     do
     {
 		t = glfwGetTime();
@@ -546,11 +552,19 @@ int main( int argc, char **argv )
 			)));
 		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
 
+		int i = 0;
 		for (PointLight * pL : pointLights)
 		{
-			glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * pL->getPosition())));
+			glm::vec3 position = glm::vec3(worldToView * pL->getPosition());
+			pointLigthsPositionInWorld[i] = position.x;
+			pointLigthsPositionInWorld[i+1] = position.y;
+			pointLigthsPositionInWorld[i+2] = position.z;
+
+			i += 3;
+			//glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * pL->getPosition())));
 		}
 		
+		glProgramUniform3fv(programObject, pointLightPositionsLocation, 6, pointLigthsPositionInWorld);
 		
         //glProgramUniform1f(programObject, timeLocation, t);
 
