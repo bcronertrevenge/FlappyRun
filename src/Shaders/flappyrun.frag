@@ -13,7 +13,7 @@ uniform sampler2D Specular;
 uniform vec3 Light;
 uniform float SpecularPower;
 
-uniform vec3 PointLightPositions[6];
+uniform vec3 PointLightPositions[12];
 uniform vec3 PointLightColor;
 uniform float PointLightIntensity;
 
@@ -33,7 +33,7 @@ in block
 vec3 pointLights( in vec3 n, in vec3 v, in vec3 diffuseColor, in vec3 specularColor, in float specularPower)
 {
 	vec3 outColor = vec3(0);
-	for (int i = 0; i < 6; ++i) {
+	for (int i = 0; i < 12; ++i) {
 		vec3 l = normalize(PointLightPositions[i] - In.CameraSpacePosition);
 		float ndotl = max(dot(n, l), 0.0);
 		vec3 h = normalize(l+v);
