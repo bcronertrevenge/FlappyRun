@@ -64,5 +64,5 @@ void main()
 	Out.CameraSpacePosition = p; 
 	Out.CameraSpaceNormal = n; 
 	Out.InstanceId = gl_InstanceID;
-	gl_Position = vec4(p + TranslationPlayer, 1.0) * Rotation;
+	gl_Position = Rotation * vec4(p + TranslationPlayer, 1.0);
 }

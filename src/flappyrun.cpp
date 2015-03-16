@@ -29,6 +29,7 @@
 #include "Sources/Pipe.h"
 #include "Sources/Bird.h"
 #include "Sources/Bomb.h"
+#include "Sources/PointLight.h"
 #include "Sources/ConstantForce.h"
 #include "Sources/LeapFrogSolver.h"
 #include "Sources/GroundForce.h"
@@ -352,16 +353,10 @@ int main( int argc, char **argv )
 
 	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
 
-	glm::vec3 pointLightsPositions[8] = {
-		glm::vec3(100.f, 100.f, 100.f),
-		glm::vec3(-5.f, 5.0, -80.f),
-		glm::vec3(5.f, 5.0, -120.f),
-		glm::vec3(-5.f, 5.0, -120.f),
-		glm::vec3(5.f, 5.0, -160.f),
-		glm::vec3(-5.f, 5.0, -160.f),
-		glm::vec3(5.f, 5.0, -200.f),
-		glm::vec3(-5.f, 5.0, -200.f)
-	};
+	std::vector<PointLight*> pointLights;
+	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -10.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -10.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+
 
 	float angle = 3.14f / 2;
 	glm::mat4 rotation = glm::mat4(glm::vec4(cos(angle), sin(angle), 0, 0), glm::vec4(-sin(angle), cos(angle), 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1));
@@ -384,6 +379,11 @@ int main( int argc, char **argv )
 	for (Pipe *pipe : pipes)
 	{
 		objects.push_back(pipe);
+	}
+
+	for (PointLight *pL : pointLights)
+	{
+		objects.push_back(pL);
 	}
 
     // Viewport 
@@ -546,8 +546,11 @@ int main( int argc, char **argv )
 			)));
 		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
 
-		glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(5.0f, 5.0f, -80.0f, 0.0))));
-
+		for (PointLight * pL : pointLights)
+		{
+			glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * pL->getPosition())));
+		}
+		
 		
         //glProgramUniform1f(programObject, timeLocation, t);
 
@@ -599,6 +602,9 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.f)));
         //glDrawElements(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(vao[1]);
+		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
+
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f, 10.0, 0.0)));
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
 
 		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(rotation));
