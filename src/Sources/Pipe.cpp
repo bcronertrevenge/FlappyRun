@@ -7,6 +7,7 @@ endZ(endZ),
 hit(false),
 hasAlreadyPassPlayer(false)
 {
+	loadOBJ("obj/Pipe.obj");
 }
 
 

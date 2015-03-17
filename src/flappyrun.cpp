@@ -172,8 +172,8 @@ int main( int argc, char **argv )
     init_gui_states(guiStates);
 
     // Load images and upload textures
-    GLuint textures[4];
-    glGenTextures(4, textures);
+    GLuint textures[5];
+    glGenTextures(5, textures);
     int x;
     int y;
     int comp;
@@ -198,7 +198,7 @@ int main( int argc, char **argv )
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     fprintf(stderr, "Spec %dx%d:%d\n", x, y, comp);
 
-	unsigned char * pipeTexture = stbi_load("textures/pipe.png", &x, &y, &comp, 4);
+	unsigned char * pipeTexture = stbi_load("textures/pipe_ambient.png", &x, &y, &comp, 4);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, textures[2]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pipeTexture);
@@ -206,11 +206,21 @@ int main( int argc, char **argv )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	fprintf(stderr, "Pipe %dx%d:%d\n", x, y, comp);
+	fprintf(stderr, "Pipe Ambient %dx%d:%d\n", x, y, comp);
+
+	unsigned char * pipeSpecTexture = stbi_load("textures/pipe_spec.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pipeSpecTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Pipe Spec %dx%d:%d\n", x, y, comp);
 	
 	unsigned char * bombTexture = stbi_load("textures/bomb.png", &x, &y, &comp, 4);
 	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, textures[3]);
+	glBindTexture(GL_TEXTURE_2D, textures[4]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, bombTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -264,7 +274,7 @@ int main( int argc, char **argv )
     float cube_uvs[] = {0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f,  1.f, 0.f,  1.f, 1.f,  0.f, 1.f,  1.f, 1.f,  0.f, 0.f, 0.f, 0.f, 1.f, 1.f,  1.f, 0.f,  };
     float cube_vertices[] = {-0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5 };
     float cube_normals[] = {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, };
-    int plane_triangleCount = 2;
+	int plane_triangleCount = 2;
     int plane_triangleList[] = {
 			0, 1, 2, 2, 1, 3,
 	};
@@ -272,19 +282,81 @@ int main( int argc, char **argv )
 			0.f, 0.f, 0.f, 50.f, 50.f, 0.f, 50.f, 50.f,
 	};
     float plane_vertices[] = {
-			-50.0, -1.0, 20.0, 50.0, -1.0, 20.0, -50.0, -1.0, -80.0, 50.0, -1.0, -80.0
+			-10.0, -1.0, 20.0, 10.0, -1.0, 20.0, -10.0, -1.0, -80.0, 10.0, -1.0, -80.0
 	};
     float plane_normals[] = {
 			0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
 	};
 
+	//Pipe
+	int pipe_triangleCount = 28;
+	int pipe_triangleList[] = {0, 1, 2,
+		2, 3, 0,
+		4, 5, 6,
+		6, 7, 4,
+		0, 3, 8,
+		8, 9, 0,
+		10, 11, 5,
+		5, 4, 10,
+		3, 2, 12,
+		12, 8, 3,
+		11, 13, 6,
+		6, 5, 11,
+		2, 1, 14,
+		14, 12, 2,
+		13, 15, 7,
+		7, 6, 13,
+		1, 0, 9,
+		9, 14, 1,
+		15, 10, 4,
+		4, 7, 15,
+		9, 8, 11,	};
+	float pipe_vertices[] = { 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.85f,
+		0.83f, 0.0f, 0.85f,
+		0.83f, 0.0f, 0.0f,
+		-0.21f, 1.55f, -0.19f,
+		1.04f, 1.55f, -0.19f,
+		1.04f, 1.55f, 1.03f,
+		-0.21f, 1.55f, 1.03f,
+		0.83f, 1.28f, 0.0f,
+		0.0f, 1.28f, 0.0f,
+		-0.21f, 1.29f, -0.19f,
+		1.04f, 1.29f, -0.19f,
+		0.83f, 1.29f, 0.85f,
+		1.04f, 1.29f, 1.03f,
+		0.0f,1.29f, 0.85f,
+		-0.21f, 1.29f, 1.03f, };
+	float pipe_uvs[] = { 1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		1.0f, 0.5f, 0.0f,
+		0.0f, 0.5f, 0.0f, };
+	float pipe_normals[] = { 0.0f, -1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		-1.0f, 0.f, 0.f,
+		0.0f, -1.0f, -0.0f,
+		0.0f, -1.0f, -0.00f,
+		0.0f, -1.0f, 0.f,
+		0.0f, -1.0f, 0.0f,
+		0.f, -1.0f, -0.0f,
+		0.0f, -1.0f, 0.0f, };
+
+	std::cout << "Vertices: " << sizeof(cube_vertices) << std::endl;
+	std::cout << "UVs: " << sizeof(cube_uvs) << std::endl;
+	std::cout << "Normals: " << sizeof(cube_normals) << std::endl;
+
     // Vertex Array Object
-    GLuint vao[2];
-    glGenVertexArrays(2, vao);
+    GLuint vao[3];
+    glGenVertexArrays(3, vao);
 
     // Vertex Buffer Objects
-    GLuint vbo[8];
-    glGenBuffers(8, vbo);
+    GLuint vbo[12];
+    glGenBuffers(12, vbo);
 
     // Cube
     glBindVertexArray(vao[0]);
@@ -327,6 +399,27 @@ int main( int argc, char **argv )
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)*2, (void*)0);
     glBufferData(GL_ARRAY_BUFFER, sizeof(plane_uvs), plane_uvs, GL_STATIC_DRAW);
+
+	// Pipe
+	glBindVertexArray(vao[2]);
+	// Bind indices and upload data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[8]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pipe_triangleList), pipe_triangleList, GL_STATIC_DRAW);
+	// Bind vertices and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_vertices), pipe_vertices, GL_STATIC_DRAW);
+	// Bind normals and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_normals), pipe_normals, GL_STATIC_DRAW);
+	// Bind uv coords and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_uvs), pipe_uvs, GL_STATIC_DRAW);
 
     // Unbind everything. Potentially illegal on some implementations
     glBindVertexArray(0);
@@ -567,7 +660,6 @@ int main( int argc, char **argv )
 			pointLigthsPositionInWorld[i+2] = position.z;
 
 			i += 3;
-			//glProgramUniform3fv(programObject, pointLightPositionsLocation, 1, glm::value_ptr(glm::vec3(worldToView * pL->getPosition())));
 		}
 		
 		glProgramUniform3fv(programObject, pointLightPositionsLocation, 12, pointLigthsPositionInWorld);
@@ -579,19 +671,21 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 
+		glBindVertexArray(vao[2]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glBindTexture(GL_TEXTURE_2D, textures[3]);
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
-				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
+				glDrawElementsInstanced(GL_TRIANGLES, pipe_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
 
+		glBindVertexArray(vao[0]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[0]);
 		glActiveTexture(GL_TEXTURE1);
@@ -606,9 +700,9 @@ int main( int argc, char **argv )
 		}
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[3]);
+		glBindTexture(GL_TEXTURE_2D, textures[4]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[3]);
+		glBindTexture(GL_TEXTURE_2D, textures[4]);
 		if (bomb.IsActive())
 		{
 			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y, bomb.GetPosition().z)));
