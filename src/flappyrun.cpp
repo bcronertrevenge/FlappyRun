@@ -172,8 +172,8 @@ int main( int argc, char **argv )
     init_gui_states(guiStates);
 
     // Load images and upload textures
-    GLuint textures[7];
-    glGenTextures(7, textures);
+    GLuint textures[9];
+    glGenTextures(9, textures);
     int x;
     int y;
     int comp;
@@ -238,10 +238,30 @@ int main( int argc, char **argv )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	fprintf(stderr, "Bird %dx%d:%d\n", x, y, comp);
 
-	unsigned char * playerTexture = stbi_load("textures/player.png", &x, &y, &comp, 4);
+	unsigned char * birdSpecTexture = stbi_load("textures/bird_spec.png", &x, &y, &comp, 4);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, textures[6]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, birdSpecTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Bird %dx%d:%d\n", x, y, comp);
+
+	unsigned char * playerTexture = stbi_load("textures/player.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, textures[7]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, playerTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Player %dx%d:%d\n", x, y, comp);
+
+	unsigned char * playerSpecTexture = stbi_load("textures/player_spec.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, textures[8]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, playerSpecTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -310,12 +330,12 @@ int main( int argc, char **argv )
 	};
 
     // Vertex Array Object
-    GLuint vao[4];
-    glGenVertexArrays(4, vao);
+    GLuint vao[6];
+    glGenVertexArrays(6, vao);
 
     // Vertex Buffer Objects
-    GLuint vbo[16];
-    glGenBuffers(16, vbo);
+    GLuint vbo[24];
+    glGenBuffers(24, vbo);
 
     // Cube
     glBindVertexArray(vao[0]);
@@ -368,6 +388,32 @@ int main( int argc, char **argv )
 
 	Player player(widthCorridor);
 
+	// Player
+	glBindVertexArray(vao[2]);
+	// Bind indices and upload data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[16]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, player.GetTriangleList().size() * sizeof(unsigned int), &player.GetTriangleList()[0], GL_STATIC_DRAW);
+	// Bind vertices and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[17]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, player.GetVertices().size() * sizeof(glm::vec3), &player.GetVertices()[0], GL_STATIC_DRAW);
+	// Bind normals and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[18]);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, player.GetNormals().size() * sizeof(glm::vec3), &player.GetNormals()[0], GL_STATIC_DRAW);
+	// Bind uv coords and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[19]);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, player.GetUVs().size() * sizeof(glm::vec3), &player.GetUVs()[0], GL_STATIC_DRAW);
+
+	// Unbind everything. Potentially illegal on some implementations
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	std::vector<Pipe*> pipes;
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -40.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -40.f), 20.f));
@@ -378,7 +424,7 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -160.f), 20.f));
 
 	// Pipe
-	glBindVertexArray(vao[2]);
+	glBindVertexArray(vao[3]);
 	// Bind indices and upload data
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[8]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, pipes[0]->GetTriangleList().size() * sizeof(unsigned int), &pipes[0]->GetTriangleList()[0], GL_STATIC_DRAW);
@@ -408,9 +454,35 @@ int main( int argc, char **argv )
 	birds.push_back(new Bird(&player, 2.5f));
 	birds.push_back(new Bird(&player, 0.f));
 
+	// Bird
+	glBindVertexArray(vao[4]);
+	// Bind indices and upload data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[20]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, birds[0]->GetTriangleList().size() * sizeof(unsigned int), &birds[0]->GetTriangleList()[0], GL_STATIC_DRAW);
+	// Bind vertices and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[21]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, birds[0]->GetVertices().size() * sizeof(glm::vec3), &birds[0]->GetVertices()[0], GL_STATIC_DRAW);
+	// Bind normals and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[22]);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, birds[0]->GetNormals().size() * sizeof(glm::vec3), &birds[0]->GetNormals()[0], GL_STATIC_DRAW);
+	// Bind uv coords and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[23]);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, birds[0]->GetUVs().size() * sizeof(glm::vec3), &birds[0]->GetUVs()[0], GL_STATIC_DRAW);
+
+	// Unbind everything. Potentially illegal on some implementations
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
 	// Bomb
-	glBindVertexArray(vao[3]);
+	glBindVertexArray(vao[5]);
 	// Bind indices and upload data
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[12]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, bomb.GetTriangleList().size() * sizeof(unsigned int), &bomb.GetTriangleList()[0], GL_STATIC_DRAW);
@@ -656,19 +728,19 @@ int main( int argc, char **argv )
         //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
-        glBindVertexArray(vao[0]);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[6]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[6]);
-		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
-        glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
-
 		glBindVertexArray(vao[2]);
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[7]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[8]);
+		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
+        glDrawElementsInstanced(GL_TRIANGLES, player.GetTriangleCount() * 3, GL_UNSIGNED_INT, (void*)0, 1);
+
+		glBindVertexArray(vao[3]);
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glBindTexture(GL_TEXTURE_2D, textures[3]);
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
@@ -678,21 +750,21 @@ int main( int argc, char **argv )
 			}
 		}
 
-		glBindVertexArray(vao[0]);
+		glBindVertexArray(vao[4]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[5]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[5]);
+		glBindTexture(GL_TEXTURE_2D, textures[6]);
 		for (Bird * bird : birds)
 		{
 			if (bird != NULL)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(bird->GetPosition()));
-				glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
+				glDrawElementsInstanced(GL_TRIANGLES, bird->GetTriangleCount() * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
 
-		glBindVertexArray(vao[3]);
+		glBindVertexArray(vao[5]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[4]);
 		glActiveTexture(GL_TEXTURE1);

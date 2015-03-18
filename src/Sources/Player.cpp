@@ -4,6 +4,7 @@
 Player::Player(float width) : MovableObject(glm::vec3(0), 1), hasBomb(false), isDead(false), width(width), BombPicked(NULL)
 {
 	jumping = false;
+	loadOBJ("obj/Player.obj");
 }
 
 
