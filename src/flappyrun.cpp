@@ -289,12 +289,12 @@ int main( int argc, char **argv )
 	};
 
     // Vertex Array Object
-    GLuint vao[3];
-    glGenVertexArrays(3, vao);
+    GLuint vao[4];
+    glGenVertexArrays(4, vao);
 
     // Vertex Buffer Objects
-    GLuint vbo[12];
-    glGenBuffers(12, vbo);
+    GLuint vbo[16];
+    glGenBuffers(16, vbo);
 
     // Cube
     glBindVertexArray(vao[0]);
@@ -388,6 +388,31 @@ int main( int argc, char **argv )
 	birds.push_back(new Bird(&player, 0.f));
 
 	Bomb bomb(glm::vec3(rand() % 11 - 5.f, 0.f, -80.f), 20.f);
+	// Bomb
+	glBindVertexArray(vao[3]);
+	// Bind indices and upload data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[12]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, bomb.GetTriangleList().size() * sizeof(unsigned int), &bomb.GetTriangleList()[0], GL_STATIC_DRAW);
+	// Bind vertices and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[13]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, bomb.GetVertices().size() * sizeof(glm::vec3), &bomb.GetVertices()[0], GL_STATIC_DRAW);
+	// Bind normals and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[14]);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, bomb.GetNormals().size() * sizeof(glm::vec3), &bomb.GetNormals()[0], GL_STATIC_DRAW);
+	// Bind uv coords and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[15]);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, bomb.GetUVs().size() * sizeof(glm::vec3), &bomb.GetUVs()[0], GL_STATIC_DRAW);
+
+	// Unbind everything. Potentially illegal on some implementations
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	std::vector<PointLight*> pointLights;
 	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
@@ -618,7 +643,7 @@ int main( int argc, char **argv )
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[3]);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
 		for (Pipe * pipe : pipes)
 		{
 			if (pipe != NULL && pipe->hasHit() == false)
@@ -642,6 +667,7 @@ int main( int argc, char **argv )
 			}
 		}
 
+		glBindVertexArray(vao[3]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textures[4]);
 		glActiveTexture(GL_TEXTURE1);
@@ -649,7 +675,7 @@ int main( int argc, char **argv )
 		if (bomb.IsActive())
 		{
 			glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(bomb.GetPosition().x, bomb.GetPosition().y, bomb.GetPosition().z)));
-			glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
+			glDrawElementsInstanced(GL_TRIANGLES, bomb.GetTriangleCount() * 3, GL_UNSIGNED_INT, (void*)0, 1);
 		}
 
 		glActiveTexture(GL_TEXTURE0);

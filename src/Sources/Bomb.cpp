@@ -5,6 +5,7 @@
 Bomb::Bomb(glm::vec3 _pos, float endZ)
 	: MovableObject(_pos, 1), endZ(endZ), active(false), picked(false), readyToExplode(false)
 {
+	loadOBJ("obj/Bomb.obj");
 }
 
 
