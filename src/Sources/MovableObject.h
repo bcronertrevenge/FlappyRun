@@ -30,7 +30,7 @@ public:
 	int GetTriangleCount();
 	std::vector<unsigned int> GetTriangleList();
 	std::vector<glm::vec3> GetVertices();
-	std::vector<glm::vec2> GetUVs();
+	std::vector<glm::vec3> GetUVs();
 	std::vector<glm::vec3> GetNormals();
 
 protected:
@@ -43,7 +43,7 @@ protected:
 	int triangleCount;
 	std::vector<unsigned int> triangleList;
 	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec2> uvs;
+	std::vector<glm::vec3> uvs;
 	std::vector<glm::vec3> normals;
 };
 

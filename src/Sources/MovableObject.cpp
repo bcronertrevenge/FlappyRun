@@ -24,11 +24,6 @@ bool MovableObject::loadOBJ(const char * path)
 	std::ifstream file(path);
 	if (file.is_open())
 	{
-		std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
-		std::vector< glm::vec3 > temp_vertices;
-		std::vector< glm::vec2 > temp_uvs;
-		std::vector< glm::vec3 > temp_normals;
-
 		std::string line;
 		std::string word;
 		while (getline(file, line))
@@ -53,7 +48,6 @@ bool MovableObject::loadOBJ(const char * path)
 				//std::cout << ", z: " << word;
 				vertex.z = atof(word.c_str());
 
-				//temp_vertices.push_back(vertex);
 				vertices.push_back(vertex);
 			}
 			else if (line[0] == 'v'  && line[1] == 't')
@@ -62,7 +56,7 @@ bool MovableObject::loadOBJ(const char * path)
 				line = line.substr(3);
 
 				std::istringstream isline(line);
-				glm::vec2 uv;
+				glm::vec3 uv;
 
 				isline >> word;
 				//std::cout << "x: " << word;
@@ -72,8 +66,11 @@ bool MovableObject::loadOBJ(const char * path)
 				//std::cout << ", y: " << word;
 				uv.y = atof(word.c_str());
 
-				temp_uvs.push_back(uv);
-				//uvs.push_back(uv);
+				isline >> word;
+				//std::cout << ", z: " << word;
+				uv.z = atof(word.c_str());
+
+				uvs.push_back(uv);
 			}
 			else if (line[0] == 'v'  && line[1] == 'n')
 			{
@@ -95,8 +92,7 @@ bool MovableObject::loadOBJ(const char * path)
 				//std::cout << ", z: " << word;
 				normal.z = atof(word.c_str());
 
-				temp_normals.push_back(normal);
-				//normals.push_back(normal);
+				normals.push_back(normal);
 			}
 			else if (line[0] == 'f')
 			{
@@ -105,75 +101,32 @@ bool MovableObject::loadOBJ(const char * path)
 
 				std::istringstream isline(line);
 				char* split;
-				std::string vertex1, vertex2, vertex3;
-				unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+				unsigned int value;
 
 				isline >> word;
 				split = strtok((char*)word.c_str(), "/");
-				vertexIndex[0] = atoi(split);
-				split = strtok(NULL, "/");
-				uvIndex[0] = atoi(split);
-				split = strtok(NULL, "/");
-				normalIndex[0] = atoi(split);
-				split = NULL;
-				
+				value = atoi(split) - 1;
+				//std::cout << value << ", ";
+				triangleList.push_back(value);
 				
 				isline >> word;
 				split = strtok((char*)word.c_str(), "/");
-				vertexIndex[1] = atoi(split);
-				split = strtok(NULL, "/");
-				uvIndex[1] = atoi(split);
-				split = strtok(NULL, "/");
-				normalIndex[1] = atoi(split);
-				split = NULL;
-
-
+				value = atoi(split) - 1;
+				//std::cout << value << ", ";
+				triangleList.push_back(value);
+				
 				isline >> word;
 				split = strtok((char*)word.c_str(), "/");
-				vertexIndex[2] = atoi(split);
-				split = strtok(NULL, "/");
-				uvIndex[2] = atoi(split);
-				split = strtok(NULL, "/");
-				normalIndex[2] = atoi(split);
-				split = NULL;
-					
-				vertexIndices.push_back(vertexIndex[0]);
-				vertexIndices.push_back(vertexIndex[1]);
-				vertexIndices.push_back(vertexIndex[2]);
-				uvIndices.push_back(uvIndex[0]);
-				uvIndices.push_back(uvIndex[1]);
-				uvIndices.push_back(uvIndex[2]);
-				normalIndices.push_back(normalIndex[0]);
-				normalIndices.push_back(normalIndex[1]);
-				normalIndices.push_back(normalIndex[2]);
+				value = atoi(split) - 1;
+				//std::cout << value << std::endl;
+				triangleList.push_back(value);
 			}
 		}
 		file.close();
 
-		// For each vertex of each triangle
-		triangleCount = vertexIndices.size() / 3;
-		std::cout << triangleCount << std::endl;
-		for (unsigned int i = 0; i < triangleCount; i++)
-		{
-			unsigned int vertexIndex = vertexIndices[i];
-			triangleList.push_back(vertexIndex-1);
-			//glm::vec3 vertex = temp_vertices[vertexIndex - 1];
-			//vertices.push_back(vertex);
-		}
-		for (unsigned int i = 0; i < uvIndices.size(); i++)
-		{
-			unsigned int uvIndex = uvIndices[i];
-			glm::vec2 uv = temp_uvs[uvIndex - 1];
-			uvs.push_back(uv);
-		}
-		for (unsigned int i = 0; i < normalIndices.size(); i++)
-		{
-			unsigned int normalIndex = normalIndices[i];
-			glm::vec3 normal = temp_normals[normalIndex - 1];
-			normals.push_back(normal);
-		}
+		triangleCount = triangleList.size() / 3;
+		//std::cout << triangleCount << std::endl;
 		
-
 		return true;
 	}
 	else 
@@ -257,7 +210,7 @@ std::vector<glm::vec3> MovableObject::GetVertices()
 	return vertices;
 }
 
-std::vector<glm::vec2> MovableObject::GetUVs()
+std::vector<glm::vec3> MovableObject::GetUVs()
 {
 	return uvs;
 }

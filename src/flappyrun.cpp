@@ -288,68 +288,6 @@ int main( int argc, char **argv )
 			0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
 	};
 
-	//Pipe
-	int pipe_triangleCount = 28;
-	int pipe_triangleList[] = {0, 1, 2,
-		2, 3, 0,
-		4, 5, 6,
-		6, 7, 4,
-		0, 3, 8,
-		8, 9, 0,
-		10, 11, 5,
-		5, 4, 10,
-		3, 2, 12,
-		12, 8, 3,
-		11, 13, 6,
-		6, 5, 11,
-		2, 1, 14,
-		14, 12, 2,
-		13, 15, 7,
-		7, 6, 13,
-		1, 0, 9,
-		9, 14, 1,
-		15, 10, 4,
-		4, 7, 15,
-		9, 8, 11,	};
-	float pipe_vertices[] = { 0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.85f,
-		0.83f, 0.0f, 0.85f,
-		0.83f, 0.0f, 0.0f,
-		-0.21f, 1.55f, -0.19f,
-		1.04f, 1.55f, -0.19f,
-		1.04f, 1.55f, 1.03f,
-		-0.21f, 1.55f, 1.03f,
-		0.83f, 1.28f, 0.0f,
-		0.0f, 1.28f, 0.0f,
-		-0.21f, 1.29f, -0.19f,
-		1.04f, 1.29f, -0.19f,
-		0.83f, 1.29f, 0.85f,
-		1.04f, 1.29f, 1.03f,
-		0.0f,1.29f, 0.85f,
-		-0.21f, 1.29f, 1.03f, };
-	float pipe_uvs[] = { 1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		1.0f, 0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f, };
-	float pipe_normals[] = { 0.0f, -1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, -1.0f,
-		1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-		-1.0f, 0.f, 0.f,
-		0.0f, -1.0f, -0.0f,
-		0.0f, -1.0f, -0.00f,
-		0.0f, -1.0f, 0.f,
-		0.0f, -1.0f, 0.0f,
-		0.f, -1.0f, -0.0f,
-		0.0f, -1.0f, 0.0f, };
-
-	std::cout << "Vertices: " << sizeof(cube_vertices) << std::endl;
-	std::cout << "UVs: " << sizeof(cube_uvs) << std::endl;
-	std::cout << "Normals: " << sizeof(cube_normals) << std::endl;
-
     // Vertex Array Object
     GLuint vao[3];
     glGenVertexArrays(3, vao);
@@ -400,27 +338,6 @@ int main( int argc, char **argv )
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)*2, (void*)0);
     glBufferData(GL_ARRAY_BUFFER, sizeof(plane_uvs), plane_uvs, GL_STATIC_DRAW);
 
-	// Pipe
-	glBindVertexArray(vao[2]);
-	// Bind indices and upload data
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[8]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pipe_triangleList), pipe_triangleList, GL_STATIC_DRAW);
-	// Bind vertices and upload data
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_vertices), pipe_vertices, GL_STATIC_DRAW);
-	// Bind normals and upload data
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_normals), pipe_normals, GL_STATIC_DRAW);
-	// Bind uv coords and upload data
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(pipe_uvs), pipe_uvs, GL_STATIC_DRAW);
-
     // Unbind everything. Potentially illegal on some implementations
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -438,6 +355,32 @@ int main( int argc, char **argv )
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -120.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -160.f), 20.f));
 	pipes.push_back(new Pipe(glm::vec3(rand() % 11 - 5.f, 0.f, -160.f), 20.f));
+
+	// Pipe
+	glBindVertexArray(vao[2]);
+	// Bind indices and upload data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[8]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, pipes[0]->GetTriangleList().size() * sizeof(unsigned int), &pipes[0]->GetTriangleList()[0], GL_STATIC_DRAW);
+	// Bind vertices and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, pipes[0]->GetVertices().size() * sizeof(glm::vec3), &pipes[0]->GetVertices()[0], GL_STATIC_DRAW);
+	// Bind normals and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 3, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, pipes[0]->GetNormals().size() * sizeof(glm::vec3), &pipes[0]->GetNormals()[0], GL_STATIC_DRAW);
+	// Bind uv coords and upload data
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, pipes[0]->GetUVs().size() * sizeof(glm::vec3), &pipes[0]->GetUVs()[0], GL_STATIC_DRAW);
+
+	// Unbind everything. Potentially illegal on some implementations
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	std::vector<Bird*> birds;
 	birds.push_back(new Bird(&player, -3.f));
@@ -681,7 +624,7 @@ int main( int argc, char **argv )
 			if (pipe != NULL && pipe->hasHit() == false)
 			{
 				glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(pipe->GetPosition()));
-				glDrawElementsInstanced(GL_TRIANGLES, pipe_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
+				glDrawElementsInstanced(GL_TRIANGLES, pipe->GetTriangleCount() * 3, GL_UNSIGNED_INT, (void*)0, 1);
 			}
 		}
 
