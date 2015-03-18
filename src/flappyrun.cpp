@@ -172,8 +172,8 @@ int main( int argc, char **argv )
     init_gui_states(guiStates);
 
     // Load images and upload textures
-    GLuint textures[5];
-    glGenTextures(5, textures);
+    GLuint textures[7];
+    glGenTextures(7, textures);
     int x;
     int y;
     int comp;
@@ -227,7 +227,28 @@ int main( int argc, char **argv )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	fprintf(stderr, "Bomb %dx%d:%d\n", x, y, comp);
-    checkError("Texture Initialization");
+
+	unsigned char * birdTexture = stbi_load("textures/bird.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, textures[5]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, birdTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Bird %dx%d:%d\n", x, y, comp);
+
+	unsigned char * playerTexture = stbi_load("textures/player.png", &x, &y, &comp, 4);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, textures[6]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, playerTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	fprintf(stderr, "Player %dx%d:%d\n", x, y, comp);
+
+	checkError("Texture Initialization");
 
     // Try to load and compile shaders
     GLuint vertShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\flappyrun.vert");
@@ -636,6 +657,10 @@ int main( int argc, char **argv )
 
         // Render vaos
         glBindVertexArray(vao[0]);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[6]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[6]);
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(player.GetPosition()));	
         glDrawElementsInstanced(GL_TRIANGLES, cube_triangleCount * 3, GL_UNSIGNED_INT, (void*)0, 1);
 
@@ -655,9 +680,9 @@ int main( int argc, char **argv )
 
 		glBindVertexArray(vao[0]);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[0]);
+		glBindTexture(GL_TEXTURE_2D, textures[5]);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, textures[1]);
+		glBindTexture(GL_TEXTURE_2D, textures[5]);
 		for (Bird * bird : birds)
 		{
 			if (bird != NULL)
