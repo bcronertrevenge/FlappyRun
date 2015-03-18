@@ -10,7 +10,7 @@ Bird::Bird(Player* _player, float posX) :
 {
 	m_Position = glm::vec3(posX, player->GetPosition().y, player->GetPosition().z + distanceMax);
 	speedIncrement = 0.02f;
-	loadOBJ("obj/Bird.obj");
+	loadOBJ("3D/Bird.obj");
 }
 
 

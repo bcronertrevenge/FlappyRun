@@ -7,7 +7,7 @@ endZ(endZ),
 hit(false),
 hasAlreadyPassPlayer(false)
 {
-	loadOBJ("obj/Pipe.obj");
+	loadOBJ("3D/Pipe.obj");
 }
 
 
