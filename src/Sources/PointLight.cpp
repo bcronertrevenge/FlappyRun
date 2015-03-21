@@ -19,7 +19,7 @@ bool PointLight::isOutOfMap()
 	return false;
 }
 
-glm::vec4 PointLight::getPosition()
+glm::vec4 PointLight::GetVec4Position()
 {
 	return glm::vec4(m_Position, 0.0);
 }

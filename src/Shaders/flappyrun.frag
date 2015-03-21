@@ -10,7 +10,6 @@ precision highp int;
 uniform float Time;
 uniform sampler2D Diffuse;
 uniform sampler2D Specular;
-uniform vec3 Light;
 uniform float SpecularPower;
 
 uniform vec3 PointLightPositions[12];
@@ -20,6 +19,9 @@ uniform float PointLightIntensity;
 uniform vec3 DirectionalLightDirection;
 uniform vec3 DirectionalLightColor;
 uniform float DirectionalLightIntensity;
+
+uniform mat4 WorldToLightScreen;
+uniform sampler2D Shadow;
 
 layout(location = FRAG_COLOR, index = 0) out vec4 FragColor;
 
@@ -39,7 +41,7 @@ vec3 pointLights( in vec3 n, in vec3 v, in vec3 diffuseColor, in vec3 specularCo
 		vec3 h = normalize(l+v);
 		float ndoth = max(dot(n, h), 0.0);
 		float d = distance(PointLightPositions[i], In.CameraSpacePosition);
-		float att = 1.f / (d*d);
+		float att = 1. / (d*d);
 		outColor += att * PointLightColor * PointLightIntensity * (diffuseColor * ndotl + specularColor * pow(ndoth, SpecularPower));
 	}
 	return outColor;
@@ -58,13 +60,34 @@ vec3 directionalLights( in vec3 n, in vec3 v, in vec3 diffuseColor, in vec3 spec
 	return outColor;
 }
 
+vec2 poissonDisk[16] = vec2[](
+	vec2( -0.94201624, -0.39906216 ),
+	vec2( 0.94558609, -0.76890725 ),
+	vec2( -0.094184101, -0.92938870 ),
+	vec2( 0.34495938, 0.29387760 ),
+	vec2( -0.91588581, 0.45771432 ),
+	vec2( -0.81544232, -0.87912464 ),
+	vec2( -0.38277543, 0.27676845 ),
+	vec2( 0.97484398, 0.75648379 ),
+	vec2( 0.44323325, -0.97511554 ),
+	vec2( 0.53742981, -0.47373420 ),
+	vec2( -0.26496911, -0.41893023 ),
+	vec2( 0.79197514, 0.19090188 ),
+	vec2( -0.24188840, 0.99706507 ),
+	vec2( -0.81409955, 0.91437590 ),
+	vec2( 0.19984126, 0.78641367 ),
+	vec2( 0.14383161, -0.14100790 )
+);
+float random(vec4 seed)
+{
+	float dot_product = dot(seed, vec4(12.9898,78.233,45.164,94.673));
+	return fract(sin(dot_product) * 43758.5453);
+}
 
 void main()
 {
 #define EX4
 #if defined(EX1)
-	//FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-	//FragColor = vec4(GeomTexcoord.s, GeomTexcoord.t, 0.0, 1.0);
 	FragColor = vec4(In.CameraSpacePosition.s, In.CameraSpacePosition.t, 0.0, 1.0);
 	FragColor = vec4(In.CameraSpaceNormal.s, In.CameraSpaceNormal.t, 0.0, 1.0);
 	FragColor = vec4(In.Texcoord.s, In.Texcoord.t, 0.0, 1.0);
@@ -91,17 +114,25 @@ void main()
 #if defined(EX4)
 	vec3 n = normalize(In.CameraSpaceNormal);
 	vec3 v = normalize(-In.CameraSpacePosition);
-	vec3 l = normalize(Light - In.CameraSpacePosition);
-	float ndotl =  max(dot(n, l), 0.0);
-	vec3 h = normalize(l-normalize(In.CameraSpacePosition));
-	float ndoth = max(dot(n, h), 0.0);
-	//vec3 color = texture(Diffuse, In.Texcoord).rgb * ndotl + texture(Specular, In.Texcoord).rrr * pow(ndoth, SpecularPower);
+
 	vec3 color = pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) 
 				+ directionalLights(n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower);
 	FragColor = vec4(color, 1.0);
-	// FragColor = vec4(vec3(ndotl), 1.0);
-	// FragColor = vec4(vec3(n), 1.0);
-	// FragColor = vec4(vec3(l), 1.0);
 
+		
+	vec4 wlP = WorldToLightScreen * vec4(In.CameraSpacePosition, 1.0);
+	vec3 lP = vec3(wlP/wlP.w) * 0.5 + 0.5;
+
+	float shadowDepth = texture(Shadow, lP.xy).r;
+	if (shadowDepth + 0.5 < lP.z)
+	{
+		FragColor = vec4(pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) , 1.0);
+	}
+	else
+	{
+		FragColor = vec4(color, 1.0);
+	}
+
+	
 #endif
 }

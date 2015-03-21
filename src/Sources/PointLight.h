@@ -9,7 +9,7 @@ public:
 	~PointLight();
 
 	bool isOutOfMap();
-	glm::vec4 getPosition();
+	glm::vec4 GetVec4Position();
 
 private:
 	glm::vec3 color;

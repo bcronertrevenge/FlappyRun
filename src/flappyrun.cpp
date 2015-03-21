@@ -282,6 +282,16 @@ int main( int argc, char **argv )
     if (check_link_error(programObject) < 0)
         exit(1);
 
+	// Try to load and compile shaders
+	GLuint shadowVertShaderId = compile_shader_from_file(GL_VERTEX_SHADER, "src\\Shaders\\shadow.vert");
+	GLuint shadowFragShaderId = compile_shader_from_file(GL_FRAGMENT_SHADER, "src\\Shaders\\shadow.frag");
+	GLuint shadowProgramObject = glCreateProgram();
+	glAttachShader(shadowProgramObject, shadowVertShaderId);
+	glAttachShader(shadowProgramObject, shadowFragShaderId);
+	glLinkProgram(shadowProgramObject);
+
+	if (check_link_error(shadowProgramObject) < 0)
+		exit(1);
 
     // Upload uniforms
     GLuint mvpLocation = glGetUniformLocation(programObject, "MVP");
@@ -305,6 +315,12 @@ int main( int argc, char **argv )
 	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.6);
 	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 5.0, 5.0)));
 	glProgramUniform1f(programObject, pointLightIntensityLocation, 1.0);
+	GLuint shadowLocation = glGetUniformLocation(programObject, "Shadow");
+	GLuint WtLSLocation = glGetUniformLocation(programObject, "WorldToLightScreen");
+	glProgramUniform1i(programObject, shadowLocation, 2);
+
+	GLuint shadowMVPLocation = glGetUniformLocation(shadowProgramObject, "MVP");
+	GLuint shadowMVLocation = glGetUniformLocation(shadowProgramObject, "MV");
 
     if (!checkError("Uniforms"))
         exit(1);
@@ -525,13 +541,6 @@ int main( int argc, char **argv )
 
 	float angle = 3.14f / 2;
 	glm::mat4 rotation = glm::mat4(glm::vec4(cos(angle), sin(angle), 0, 0), glm::vec4(-sin(angle), cos(angle), 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1));
-
-	// Disable the depth test
-	glDisable(GL_DEPTH_TEST);
-	// Enable blending
-	glEnable(GL_BLEND);
-	// Setup additive blending
-	glBlendFunc(GL_ONE, GL_ONE);
 	
 	std::vector<MovableObject*> objects;
 	objects.push_back(&bomb);
@@ -578,6 +587,42 @@ int main( int argc, char **argv )
 
 	float speed = 0.f;
 	float LastTimePassed = 0.f;
+
+	// Create shadow FBO
+	GLuint shadowFbo;
+	glGenFramebuffers(1, &shadowFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
+	// Create shadow textures
+	//const int LIGHT_COUNT = 12;
+	const int LIGHT_SHADOW_RES = 1024;
+	GLuint shadowTexture;
+	glGenTextures(1, &shadowTexture);
+	//for (int i = 0; i < LIGHT_COUNT; ++i)
+	//{
+		glBindTexture(GL_TEXTURE_2D, shadowTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,LIGHT_SHADOW_RES, LIGHT_SHADOW_RES, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	//}
+	// Create a render buffer since we don't need to read shadow color
+	// in a texture
+	GLuint shadowRenderBuffer;
+	glGenRenderbuffers(1, &shadowRenderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, shadowRenderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, LIGHT_SHADOW_RES, LIGHT_SHADOW_RES);
+	// Attach the first texture to the depth attachment
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTexture, 0);
+	// Attach the renderbuffer
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, shadowRenderBuffer);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		fprintf(stderr, "Error on building shadow framebuffer\n");
+		exit(EXIT_FAILURE);
+	}
+	// Fall back to default framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     do
     {
@@ -688,6 +733,30 @@ int main( int argc, char **argv )
         glm::vec4 light = worldToView * glm::vec4(10.0, 10.0, 0.0, 1.0);
 		glm::mat4 inverseProjection = glm::inverse(projection);
 
+		glm::vec3 directionalDirection = glm::vec3(0.0, -5.0, -5.0);
+		glm::vec3 ld(0.f, 0.f, 0.f);
+		float angle = 45.f;
+		float penumbraAngle = 50.f;
+		glm::vec3 color(1.f, 1.f, 1.f);
+
+		glm::mat4 shadowProjection = glm::perspective(glm::radians(penumbraAngle*2.f), 1.f, 1.f, 100.f);
+		glm::mat4 worldToLight = glm::lookAt(glm::vec3(0. ,0. ,0.), directionalDirection, glm::vec3(0.f, 0.f, -1.f));
+		glm::mat4 objectToLight = worldToLight * objectToWorld;
+		glm::mat4 objectToLightScreen = shadowProjection * objectToLight;
+		glm::mat4 worldToLightScreen = shadowProjection * worldToLight;
+
+		glUseProgram(shadowProgramObject);
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
+		// Clear only the depth buffer
+		glClear(GL_DEPTH_BUFFER_BIT);
+		// Update scene uniforms
+		glProgramUniformMatrix4fv(shadowProgramObject, shadowMVPLocation, 1, 0, glm::value_ptr(objectToLightScreen));
+		glProgramUniformMatrix4fv(shadowProgramObject, shadowMVLocation, 1, 0, glm::value_ptr(objectToLight));
+
+
+		// Fallback to default framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         // Select textures
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures[0]);
@@ -695,6 +764,7 @@ int main( int argc, char **argv )
         glBindTexture(GL_TEXTURE_2D, textures[1]);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glActiveTexture(GL_TEXTURE3);
 
         // Select shader
        glUseProgram(programObject);
@@ -704,28 +774,14 @@ int main( int argc, char **argv )
         glProgramUniformMatrix4fv(programObject, mvLocation, 1, 0, glm::value_ptr(mv));
         glProgramUniform3fv(programObject, lightLocation, 1, glm::value_ptr(glm::vec3(light) / light.w));
         glProgramUniform1f(programObject, specularPowerLocation, 30.f);
+		glProgramUniformMatrix4fv(programObject, WtLSLocation, 1, 0, glm::value_ptr(worldToLightScreen));
 		glUniformMatrix4fv(rotationLocation, 1, GL_FALSE, glm::value_ptr(glm::mat4(
 			cos(0), sin(0), 0, 0,
 			sin(0), cos(0), 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1
 			)));
-		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
 
-		int i = 0;
-		for (PointLight * pL : pointLights)
-		{
-			glm::vec3 position = glm::vec3(worldToView * pL->getPosition());
-			pointLigthsPositionInWorld[i] = position.x;
-			pointLigthsPositionInWorld[i+1] = position.y;
-			pointLigthsPositionInWorld[i+2] = position.z;
-
-			i += 3;
-		}
-		
-		glProgramUniform3fv(programObject, pointLightPositionsLocation, 12, pointLigthsPositionInWorld);
-		
-        //glProgramUniform1f(programObject, timeLocation, t);
 
         // Render vaos
 		glBindVertexArray(vao[2]);
@@ -794,6 +850,46 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, TransLocation, 1, glm::value_ptr(glm::vec3(0.0f,-5.0, 0.0)));
 		glDrawElements(GL_TRIANGLES, plane_triangleCount * 3, GL_UNSIGNED_INT, (void*)0);
 		
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
+		glActiveTexture(GL_TEXTURE3);
+
+		glBindTexture(GL_TEXTURE_2D, shadowTexture);
+		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+
+		int i = 0;
+		for (PointLight * pL : pointLights)
+		{
+			glm::vec3 position = glm::vec3(worldToView * pL->GetVec4Position());
+			pointLigthsPositionInWorld[i] = position.x;
+			pointLigthsPositionInWorld[i + 1] = position.y;
+			pointLigthsPositionInWorld[i + 2] = position.z;
+
+			/*glBindTexture(GL_TEXTURE_2D, shadowTextures[(i/3) + 1]);
+
+			glm::mat4 shadowProjection = glm::perspective(glm::radians(penumbraAngle*2.f), 1.f, 1.f, 100.f);
+			glm::mat4 worldToLight = glm::lookAt(pL->GetPosition(), pL->GetPosition(), glm::vec3(0.f, 0.f, -1.f));
+			glm::mat4 objectToLight = worldToLight * objectToWorld;
+			glm::mat4 objectToLightScreen = shadowProjection * objectToLight;
+			glm::mat4 worldToLightScreen = shadowProjection * worldToLight;
+
+			glUseProgram(shadowProgramObject);
+			glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
+			// Clear only the depth buffer
+			glClear(GL_DEPTH_BUFFER_BIT);
+			// Update scene uniforms
+			glProgramUniformMatrix4fv(shadowProgramObject, shadowMVPLocation, 1, 0, glm::value_ptr(objectToLightScreen));
+			glProgramUniformMatrix4fv(shadowProgramObject, shadowMVLocation, 1, 0, glm::value_ptr(objectToLight));*/
+
+			i += 3;
+		}
+		//glUseProgram(programObject);
+		glProgramUniform3fv(programObject, pointLightPositionsLocation, 12, pointLigthsPositionInWorld);
 
 		
 
