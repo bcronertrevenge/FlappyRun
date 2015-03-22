@@ -657,7 +657,7 @@ int main( int argc, char **argv )
             guiStates.panLock = false;
 
         // Camera movements
-        int altPressed = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+        /*int altPressed = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
         if (!altPressed && (leftButton == GLFW_PRESS || rightButton == GLFW_PRESS || middleButton == GLFW_PRESS))
         {
             double x; double y;
@@ -693,7 +693,7 @@ int main( int argc, char **argv )
             }
             guiStates.lockPositionX = mousex;
             guiStates.lockPositionY = mousey;
-        }
+        }*/
 
 		if (player.IsDead() == false)
 		{
@@ -1254,13 +1254,13 @@ void camera_compute(Camera & c)
 
 void camera_defaults(Camera & c)
 {
-    c.phi = 3.14/2.f;
-    c.theta = 3.14/2.f;
-    c.radius = 10.f;
+	c.phi = 3.14 / 2.5f;
+	c.theta = 3.14 / 2.f;
+	c.radius = 10.f;
     camera_compute(c);
 }
 
-void camera_zoom(Camera & c, float factor)
+/*void camera_zoom(Camera & c, float factor)
 {
     c.radius += factor * c.radius ;
     if (c.radius < 0.1)
@@ -1295,7 +1295,7 @@ void camera_pan(Camera & c, float x, float y)
     c.o[1] -= side[1] * x * c.radius * 2;
     c.o[2] -= side[2] * x * c.radius * 2;       
     camera_compute(c);
-}
+}*/
 
 void init_gui_states(GUIStates & guiStates)
 {
