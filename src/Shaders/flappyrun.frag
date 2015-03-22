@@ -114,8 +114,9 @@ void main()
 	vec3 n = normalize(In.CameraSpaceNormal);
 	vec3 v = normalize(-In.CameraSpacePosition);
 
-	vec3 color = pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) 
-				+ spotLight( In.CameraSpacePosition, n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower);
+	vec3 color = directionalLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) 
+				+ pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) 
+				;
 	FragColor = vec4(color, 1.0);
 
 		
@@ -126,10 +127,11 @@ void main()
 
 	if (shadowDepth + 0.6 < lP.z)
 	{
-		FragColor = vec4(pointLights( n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower ) , 1.0);
+		FragColor = vec4(color , 1.0);
 	}
 	else
 	{
+		color += spotLight( In.CameraSpacePosition, n, v, texture(Diffuse, In.Texcoord).rgb, texture(Specular, In.Texcoord).rrr, SpecularPower);
 		FragColor = vec4(color, 1.0);
 	}
 	

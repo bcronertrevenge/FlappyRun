@@ -318,7 +318,7 @@ int main( int argc, char **argv )
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
 	glProgramUniform3fv(programObject, directionalLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0,1.0, 1.0)));
-	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.6);
+	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.1);
 	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 0.8, 0.5)));
 	glProgramUniform1f(programObject, pointLightIntensityLocation, 5.0);
 	glProgramUniform3fv(programObject, spotLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
@@ -870,9 +870,10 @@ int main( int argc, char **argv )
 		glActiveTexture(GL_TEXTURE3);
 
 		glBindTexture(GL_TEXTURE_2D, shadowTexture);
-		//glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
 		glProgramUniform3fv(programObject, spotLightPositionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(spotPosition, 1.0))));
 		glProgramUniform3fv(programObject, spotLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(ld, 0.0))));
+
+		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
 
 		int i = 0;
 		for (PointLight * pL : pointLights)
