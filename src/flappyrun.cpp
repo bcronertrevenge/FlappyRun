@@ -740,7 +740,7 @@ int main( int argc, char **argv )
 		glm::vec3 color(1.f, 1.f, 1.f);
 
 		glm::mat4 shadowProjection = glm::perspective(glm::radians(penumbraAngle*2.f), 1.f, 1.f, 100.f);
-		glm::mat4 worldToLight = glm::lookAt(glm::vec3(0. ,0. ,0.), directionalDirection, glm::vec3(0.f, 0.f, -1.f));
+		glm::mat4 worldToLight = glm::lookAt(glm::vec3(0., 0., 0.), directionalDirection, glm::vec3(0.f, 0.f, -1.f));
 		glm::mat4 objectToLight = worldToLight * objectToWorld;
 		glm::mat4 objectToLightScreen = shadowProjection * objectToLight;
 		glm::mat4 worldToLightScreen = shadowProjection * worldToLight;
