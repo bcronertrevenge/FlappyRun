@@ -21,5 +21,5 @@ bool PointLight::isOutOfMap()
 
 glm::vec4 PointLight::GetVec4Position()
 {
-	return glm::vec4(m_Position, 0.0);
+	return glm::vec4(m_Position, 1.0);
 }
