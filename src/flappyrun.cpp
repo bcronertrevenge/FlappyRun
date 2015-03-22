@@ -308,13 +308,21 @@ int main( int argc, char **argv )
 	GLuint pointLightPositionsLocation = glGetUniformLocation(programObject, "PointLightPositions");
 	GLuint pointLightColorLocation = glGetUniformLocation(programObject, "PointLightColor");
 	GLuint pointLightIntensityLocation = glGetUniformLocation(programObject, "PointLightIntensity");
+	GLuint spotLightDirectionLocation = glGetUniformLocation(programObject, "SpotLightDirection");
+	GLuint spotLightPositionLocation = glGetUniformLocation(programObject, "SpotLightPosition");
+	GLuint spotLightAngleLocation = glGetUniformLocation(programObject, "SpotLightAngle");
+	GLuint spotLightPenumbraAngleLocation = glGetUniformLocation(programObject, "SpotLightPenumbraAngle");
+	GLuint spotLightColorLocation = glGetUniformLocation(programObject, "SpotLightColor");
+	GLuint spotLightIntensityLocation = glGetUniformLocation(programObject, "SpotLightIntensity");
 	GLuint rotationLocation = glGetUniformLocation(programObject, "Rotation");
     glProgramUniform1i(programObject, diffuseLocation, 0);
     glProgramUniform1i(programObject, specLocation, 1);
 	glProgramUniform3fv(programObject, directionalLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0,1.0, 1.0)));
 	glProgramUniform1f(programObject, directionalLightIntensityLocation, 0.6);
-	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 5.0, 5.0)));
-	glProgramUniform1f(programObject, pointLightIntensityLocation, 1.0);
+	glProgramUniform3fv(programObject, pointLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 0.8, 0.5)));
+	glProgramUniform1f(programObject, pointLightIntensityLocation, 5.0);
+	glProgramUniform3fv(programObject, spotLightColorLocation, 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform1f(programObject, spotLightIntensityLocation, 10.0);
 	GLuint shadowLocation = glGetUniformLocation(programObject, "Shadow");
 	GLuint WtLSLocation = glGetUniformLocation(programObject, "WorldToLightScreen");
 	glProgramUniform1i(programObject, shadowLocation, 2);
@@ -518,14 +526,14 @@ int main( int argc, char **argv )
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT)* 2, (void*)0);
 	glBufferData(GL_ARRAY_BUFFER, bomb.GetUVs().size() * sizeof(glm::vec3), &bomb.GetUVs()[0], GL_STATIC_DRAW);
 
-	// Unbind everything. Potentially illegal on some implementations
+	// Unbind everything. Potentially illegal on some implementationsc
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	std::vector<PointLight*> pointLights;
-	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
-	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(4.5f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
+	pointLights.push_back(new PointLight(glm::vec3(-4.5f, 5.0f, -20.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
 	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -40.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
 	pointLights.push_back(new PointLight(glm::vec3(-5.0f, 5.0f, -40.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
 	pointLights.push_back(new PointLight(glm::vec3(5.0f, 5.0f, -60.0f), glm::vec3(1.0, 0.5, 0.5), 1.0));
@@ -593,7 +601,7 @@ int main( int argc, char **argv )
 	glGenFramebuffers(1, &shadowFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
 	// Create shadow textures
-	//const int LIGHT_COUNT = 12;
+	//const int LIGHT_COUNT = 13;
 	const int LIGHT_SHADOW_RES = 1024;
 	GLuint shadowTexture;
 	glGenTextures(1, &shadowTexture);
@@ -733,17 +741,19 @@ int main( int argc, char **argv )
         glm::vec4 light = worldToView * glm::vec4(10.0, 10.0, 0.0, 1.0);
 		glm::mat4 inverseProjection = glm::inverse(projection);
 
-		glm::vec3 directionalDirection = glm::vec3(0.0, -5.0, -5.0);
-		glm::vec3 ld(0.f, 0.f, 0.f);
-		float angle = 45.f;
-		float penumbraAngle = 50.f;
-		glm::vec3 color(1.f, 1.f, 1.f);
+		glm::vec3 ld(0.0, -5.0, -5.0);
+		glm::vec3 spotPosition(0.f, 3.f, 8.f);
+		float angle = 60.f;
+		float penumbraAngle = 65.f;
 
 		glm::mat4 shadowProjection = glm::perspective(glm::radians(penumbraAngle*2.f), 1.f, 1.f, 100.f);
-		glm::mat4 worldToLight = glm::lookAt(glm::vec3(0., 0., 0.), directionalDirection, glm::vec3(0.f, 0.f, -1.f));
+		glm::mat4 worldToLight = glm::lookAt(spotPosition, spotPosition + ld, glm::vec3(0.f, 0.f, -1.f));
 		glm::mat4 objectToLight = worldToLight * objectToWorld;
 		glm::mat4 objectToLightScreen = shadowProjection * objectToLight;
-		glm::mat4 worldToLightScreen = shadowProjection * worldToLight;
+		glm::mat4 worldToLightScreen = shadowProjection * worldToLight * glm::inverse(worldToView);
+
+		glProgramUniform1f(programObject, spotLightAngleLocation, angle);
+		glProgramUniform1f(programObject, spotLightPenumbraAngleLocation, penumbraAngle);
 
 		glUseProgram(shadowProgramObject);
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
@@ -860,7 +870,9 @@ int main( int argc, char **argv )
 		glActiveTexture(GL_TEXTURE3);
 
 		glBindTexture(GL_TEXTURE_2D, shadowTexture);
-		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+		//glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+		glProgramUniform3fv(programObject, spotLightPositionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(spotPosition, 1.0))));
+		glProgramUniform3fv(programObject, spotLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(ld, 0.0))));
 
 		int i = 0;
 		for (PointLight * pL : pointLights)
@@ -870,26 +882,11 @@ int main( int argc, char **argv )
 			pointLigthsPositionInWorld[i + 1] = position.y;
 			pointLigthsPositionInWorld[i + 2] = position.z;
 
-			/*glBindTexture(GL_TEXTURE_2D, shadowTextures[(i/3) + 1]);
-
-			glm::mat4 shadowProjection = glm::perspective(glm::radians(penumbraAngle*2.f), 1.f, 1.f, 100.f);
-			glm::mat4 worldToLight = glm::lookAt(pL->GetPosition(), pL->GetPosition(), glm::vec3(0.f, 0.f, -1.f));
-			glm::mat4 objectToLight = worldToLight * objectToWorld;
-			glm::mat4 objectToLightScreen = shadowProjection * objectToLight;
-			glm::mat4 worldToLightScreen = shadowProjection * worldToLight;
-
-			glUseProgram(shadowProgramObject);
-			glBindFramebuffer(GL_FRAMEBUFFER, shadowFbo);
-			// Clear only the depth buffer
-			glClear(GL_DEPTH_BUFFER_BIT);
-			// Update scene uniforms
-			glProgramUniformMatrix4fv(shadowProgramObject, shadowMVPLocation, 1, 0, glm::value_ptr(objectToLightScreen));
-			glProgramUniformMatrix4fv(shadowProgramObject, shadowMVLocation, 1, 0, glm::value_ptr(objectToLight));*/
-
 			i += 3;
 		}
-		//glUseProgram(programObject);
+		glUseProgram(programObject);
 		glProgramUniform3fv(programObject, pointLightPositionsLocation, 12, pointLigthsPositionInWorld);
+		
 
 		
 
