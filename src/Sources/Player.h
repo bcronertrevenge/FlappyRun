@@ -13,13 +13,11 @@ public:
 	void DropBomb();
 	void KillPlayer();
 
-	void applyForce(glm::vec3 _pos);
 	void MoveLeft();
 	void MoveRight();
 	bool IsDead();
 	void PickBomb(Bomb* bomb);
 	bool HasBomb();
-	float GetMaxSpeed();
 	void Jump(float _time);
 	bool IsJumping();
 	void SetJumping(bool _jump);

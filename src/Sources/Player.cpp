@@ -73,13 +73,6 @@ void Player::Jump(float _time)
 	LastTimeJump = _time;
 }
 
-void Player::applyForce(glm::vec3 _pos)
-{
-	m_Position += _pos;
-
-	if (m_Position.y < 0.f) m_Position.y = 0.f;
-}
-
 bool Player::IsJumping()
 {
 	return jumping;
