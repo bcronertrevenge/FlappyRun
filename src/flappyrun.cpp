@@ -873,7 +873,7 @@ int main( int argc, char **argv )
 		glProgramUniform3fv(programObject, spotLightPositionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(spotPosition, 1.0))));
 		glProgramUniform3fv(programObject, spotLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(ld, 0.0))));
 
-		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(0.0, -5.0, -5.0, 0.0))));
+		glProgramUniform3fv(programObject, directionalLightDirectionLocation, 1, glm::value_ptr(glm::vec3(worldToView * glm::vec4(ld, 0.0))));
 
 		int i = 0;
 		for (PointLight * pL : pointLights)
