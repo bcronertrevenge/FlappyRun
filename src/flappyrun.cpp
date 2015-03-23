@@ -577,8 +577,8 @@ int main( int argc, char **argv )
 	float combo = 0;
 
 	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
-	ConstantForce JumpForce(glm::vec3(0.f, 400.f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 200.f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 200.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 100.f, 0.f));
 	ConstantForce SpeedUpForce(glm::vec3(0.f, 0.f, 1.f));
 	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -150.f));
 	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.01f));
@@ -912,26 +912,15 @@ int main( int argc, char **argv )
         imguiBeginFrame(mousex, mousey, mbut, mscroll);
         int logScroll = 0;
         char lineBuffer[512];
-        imguiBeginScrollArea("aogl", width - 210, height - 310, 200, 300, &logScroll);
+        imguiBeginScrollArea("Flappy Runner", width - 210, height - 310, 200, 300, &logScroll);
         sprintf(lineBuffer, "FPS %f", fps);
         imguiLabel(lineBuffer);
 		
 		imguiSlider("Pipes Crossed", &pipescrossed, 0, 100, 1);
+		imguiSlider("Combo", &combo, 0, 100, 1);
 
 		float hasbomb = player.HasBomb();
 		imguiSlider("Bomb", &hasbomb, 0, 1, 1);
-
-		float x, y, z;
-		x = birds[0]->GetPosition().x;
-		y = birds[0]->GetPosition().y;
-		z = birds[0]->GetPosition().z;
-
-		imguiSlider("PosX", &x, -200, 200, 1);
-		imguiSlider("PosY", &y, -200, 200, 1);
-		imguiSlider("PosZ", &z, -200, 200, 1);
-
-		imguiSlider("t", &t, 0, 200, 1);
-		imguiSlider("dt", &dt, 0, 10, 0.01);
 
         imguiEndScrollArea();
         imguiEndFrame();
