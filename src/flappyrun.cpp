@@ -577,8 +577,8 @@ int main( int argc, char **argv )
 	float combo = 0;
 
 	ConstantForce gravity(glm::vec3(0.f, -10.f, 0.f));
-	ConstantForce JumpForce(glm::vec3(0.f, 200.f, 0.f));
-	ConstantForce FlapForce(glm::vec3(0.f, 100.f, 0.f));
+	ConstantForce JumpForce(glm::vec3(0.f, 400.f, 0.f));
+	ConstantForce FlapForce(glm::vec3(0.f, 200.f, 0.f));
 	ConstantForce SpeedUpForce(glm::vec3(0.f, 0.f, 1.f));
 	ConstantForce SpeedDownForce(glm::vec3(0.f, 0.f, -150.f));
 	ConstantForce MovementBird(glm::vec3(0.f, 0.f, -1.01f));
