@@ -132,7 +132,7 @@ int main( int argc, char **argv )
 # endif
 
     // Open a window and create its OpenGL context
-    GLFWwindow * window = glfwCreateWindow(width/DPI, height/DPI, "aogl", 0, 0);
+    GLFWwindow * window = glfwCreateWindow(width/DPI, height/DPI, "Flappy Runner", 0, 0);
     if( ! window )
     {
         fprintf( stderr, "Failed to open GLFW window\n" );
